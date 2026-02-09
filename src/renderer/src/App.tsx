@@ -188,7 +188,7 @@ function App(): React.JSX.Element {
       )}
 
       <main className="app-main">
-        <SourcePicker key={authKey} onSelect={handleSelect} disabled={loading} />
+        <SourcePicker key={authKey} onSelect={handleSelect} disabled={false} />
         <div ref={contentRef} className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
           {hasSelection ? (
             <>

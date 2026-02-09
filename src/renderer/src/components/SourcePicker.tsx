@@ -49,7 +49,7 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
       window.api.getProcessingStatuses().then(setStatuses)
     }
     fetchData()
-    const interval = setInterval(fetchData, 60_000)
+    const interval = setInterval(fetchData, 5_000)
     return () => clearInterval(interval)
   }, [])
 
