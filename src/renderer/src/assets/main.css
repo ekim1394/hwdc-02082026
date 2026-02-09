@@ -1255,6 +1255,124 @@ button {
   border-radius: 4px;
 }
 
+.action-status.failed {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff6b6b;
+  padding: 4px 10px;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 4px;
+}
+
+.action-card.failed {
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.04);
+}
+
+.action-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-preview-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ev-c-text-3);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid var(--border);
+}
+
+.action-preview-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ev-c-text-1);
+}
+
+/* --- Action Preview Panel --- */
+
+.action-preview {
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-field {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preview-label {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--ev-c-text-3);
+  min-width: 56px;
+}
+
+.preview-value {
+  color: var(--ev-c-text-2);
+  word-break: break-word;
+}
+
+.preview-body {
+  flex-direction: column;
+}
+
+.preview-email-body {
+  margin: 4px 0 0;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ev-c-text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.preview-email-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.preview-email-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* --- Action Error --- */
+
+.action-error {
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: #ff6b6b;
+  line-height: 1.4;
+}
+
+.action-error-icon {
+  flex-shrink: 0;
+}
+
 /* --- Auto-Execute Toggle --- */
 
 .auto-execute-toggle {

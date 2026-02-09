@@ -10,12 +10,24 @@ export interface ResearchApiResult {
   error?: string
 }
 
+export interface ActionStepData {
+  type: 'email' | 'meeting'
+  description: string
+  details: string
+  to?: string
+  subject?: string
+  body?: string
+  meetingSummary?: string
+  attendees?: string[]
+  durationMinutes?: number
+}
+
 export interface InsightsApiResult {
   success: boolean
   data?: {
     keyInsights: string[]
     feedback: string[]
-    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    actionSteps: ActionStepData[]
     rawOutput: string
   }
   error?: string
@@ -60,14 +72,14 @@ const api = {
   ): Promise<{
     keyInsights: string[]
     feedback: string[]
-    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    actionSteps: ActionStepData[]
     rawOutput: string
   } | null> => ipcRenderer.invoke('get-insights', type, sourceId),
   executeInsightAction: (
     sourceType: string,
     sourceId: string,
     actionIndex: number
-  ): Promise<{ success: boolean; error?: string }> =>
+  ): Promise<{ success: boolean; messageId?: string; eventId?: string; error?: string }> =>
     ipcRenderer.invoke('execute-insight-action', sourceType, sourceId, actionIndex),
   getActionLog: (
     sourceType: string,

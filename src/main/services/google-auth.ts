@@ -10,7 +10,7 @@ import { shell } from 'electron'
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/calendar.readonly'
+  'https://www.googleapis.com/auth/calendar.events'
 ]
 
 const TOKEN_PATH = path.join(

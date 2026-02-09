@@ -4,6 +4,12 @@ interface ActionStep {
   type: 'email' | 'meeting'
   description: string
   details: string
+  to?: string
+  subject?: string
+  body?: string
+  meetingSummary?: string
+  attendees?: string[]
+  durationMinutes?: number
 }
 
 interface InsightsOutputProps {
@@ -27,19 +33,23 @@ export default function InsightsOutput({
 }: InsightsOutputProps): React.JSX.Element {
   const [autoExecute, setAutoExecute] = useState(false)
   const [executedActions, setExecutedActions] = useState<Set<number>>(new Set())
+  const [failedActions, setFailedActions] = useState<Map<number, string>>(new Map())
   const [executingAction, setExecutingAction] = useState<number | null>(null)
+  const [expandedAction, setExpandedAction] = useState<number | null>(null)
 
-  // Reset executed actions when source changes
+  // Reset state when source changes
   useEffect(() => {
     setExecutedActions(new Set())
+    setFailedActions(new Map())
     setExecutingAction(null)
+    setExpandedAction(null)
   }, [sourceType, sourceId])
 
   // Auto-execute actions when toggle is on and results arrive
   useEffect(() => {
     if (autoExecute && actionSteps && sourceType && sourceId) {
       actionSteps.forEach((_, idx) => {
-        if (!executedActions.has(idx)) {
+        if (!executedActions.has(idx) && !failedActions.has(idx)) {
           handleExecuteAction(idx)
         }
       })
@@ -55,9 +65,19 @@ export default function InsightsOutput({
       const result = await window.api.executeInsightAction(sourceType, sourceId, actionIndex)
       if (result.success) {
         setExecutedActions((prev) => new Set([...prev, actionIndex]))
+        setFailedActions((prev) => {
+          const next = new Map(prev)
+          next.delete(actionIndex)
+          return next
+        })
+      } else {
+        setFailedActions(
+          (prev) => new Map([...prev, [actionIndex, result.error || 'Unknown error']])
+        )
       }
     } catch (err) {
-      console.error('Failed to execute action:', err)
+      const msg = err instanceof Error ? err.message : 'Failed to execute action'
+      setFailedActions((prev) => new Map([...prev, [actionIndex, msg]]))
     } finally {
       setExecutingAction(null)
     }
@@ -172,28 +192,104 @@ export default function InsightsOutput({
             {actionSteps.map((action, i) => {
               const isExecuted = executedActions.has(i)
               const isExecuting = executingAction === i
+              const failError = failedActions.get(i)
+              const isExpanded = expandedAction === i
 
               return (
-                <div key={i} className={`action-card ${isExecuted ? 'executed' : ''}`}>
+                <div
+                  key={i}
+                  className={`action-card ${isExecuted ? 'executed' : ''} ${failError ? 'failed' : ''}`}
+                >
                   <div className="action-card-header">
                     <span className="action-type-badge">
                       {action.type === 'email' ? '📧' : '📅'}{' '}
                       {action.type === 'email' ? 'Email' : 'Meeting'}
                     </span>
-                    {isExecuted ? (
-                      <span className="action-status executed">✓ Executed</span>
-                    ) : (
+                    <div className="action-card-controls">
                       <button
-                        className="action-execute-btn"
-                        onClick={() => handleExecuteAction(i)}
-                        disabled={isExecuting}
+                        className="action-preview-btn"
+                        onClick={() => setExpandedAction(isExpanded ? null : i)}
+                        title={isExpanded ? 'Hide details' : 'Preview details'}
                       >
-                        {isExecuting ? '⏳ Running...' : '▶ Execute'}
+                        {isExpanded ? '▲ Hide' : '▼ Preview'}
                       </button>
-                    )}
+                      {isExecuted ? (
+                        <span className="action-status executed">
+                          ✓ {action.type === 'email' ? 'Sent' : 'Created'}
+                        </span>
+                      ) : failError ? (
+                        <span className="action-status failed" title={failError}>
+                          ✗ Failed
+                        </span>
+                      ) : (
+                        <button
+                          className="action-execute-btn"
+                          onClick={() => handleExecuteAction(i)}
+                          disabled={isExecuting}
+                        >
+                          {isExecuting ? '⏳ Running...' : '▶ Execute'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <h4 className="action-title">{action.description}</h4>
                   <p className="action-details">{action.details}</p>
+
+                  {/* Expanded preview of what will be sent/created */}
+                  {isExpanded && (
+                    <div className="action-preview">
+                      {action.type === 'email' && (
+                        <>
+                          <div className="preview-field">
+                            <span className="preview-label">To:</span>
+                            <span className="preview-value">{action.to || '—'}</span>
+                          </div>
+                          <div className="preview-field">
+                            <span className="preview-label">Subject:</span>
+                            <span className="preview-value">{action.subject || '—'}</span>
+                          </div>
+                          <div className="preview-field preview-body">
+                            <span className="preview-label">Body:</span>
+                            <pre className="preview-email-body">{action.body || '—'}</pre>
+                          </div>
+                        </>
+                      )}
+                      {action.type === 'meeting' && (
+                        <>
+                          <div className="preview-field">
+                            <span className="preview-label">Event:</span>
+                            <span className="preview-value">
+                              {action.meetingSummary || action.description}
+                            </span>
+                          </div>
+                          <div className="preview-field">
+                            <span className="preview-label">Duration:</span>
+                            <span className="preview-value">
+                              {action.durationMinutes || 30} min
+                            </span>
+                          </div>
+                          {action.attendees && action.attendees.length > 0 && (
+                            <div className="preview-field">
+                              <span className="preview-label">Attendees:</span>
+                              <span className="preview-value">{action.attendees.join(', ')}</span>
+                            </div>
+                          )}
+                          <div className="preview-field">
+                            <span className="preview-label">When:</span>
+                            <span className="preview-value">Next business day at 10:00 AM</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Error details */}
+                  {failError && (
+                    <div className="action-error">
+                      <span className="action-error-icon">⚠️</span>
+                      <span>{failError}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}

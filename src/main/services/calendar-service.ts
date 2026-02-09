@@ -51,3 +51,41 @@ export async function getCalendarEvents(maxResults = 10): Promise<CalendarEvent[
   console.log(`📅 Fetched ${events.length} events`)
   return events
 }
+
+/**
+ * Create a new Google Calendar event.
+ */
+export async function createCalendarEvent(params: {
+  summary: string
+  description?: string
+  startISO: string
+  endISO: string
+  attendees?: string[]
+}): Promise<{ success: boolean; eventId?: string; error?: string }> {
+  const auth = getAuthClient()
+  if (!auth) {
+    return { success: false, error: 'Not authenticated with Google' }
+  }
+
+  const calendar = google.calendar({ version: 'v3', auth })
+
+  try {
+    const res = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: {
+        summary: params.summary,
+        description: params.description || '',
+        start: { dateTime: params.startISO },
+        end: { dateTime: params.endISO },
+        attendees: (params.attendees || []).map((email) => ({ email }))
+      }
+    })
+
+    console.log(`📅 Calendar event created: ${res.data.id}`)
+    return { success: true, eventId: res.data.id || undefined }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('📅 Failed to create calendar event:', message)
+    return { success: false, error: message }
+  }
+}

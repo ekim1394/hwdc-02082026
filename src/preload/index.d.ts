@@ -9,12 +9,24 @@ interface ResearchApiResult {
   error?: string
 }
 
+interface ActionStepData {
+  type: 'email' | 'meeting'
+  description: string
+  details: string
+  to?: string
+  subject?: string
+  body?: string
+  meetingSummary?: string
+  attendees?: string[]
+  durationMinutes?: number
+}
+
 interface InsightsApiResult {
   success: boolean
   data?: {
     keyInsights: string[]
     feedback: string[]
-    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    actionSteps: ActionStepData[]
     rawOutput: string
   }
   error?: string
@@ -86,14 +98,14 @@ interface Api {
   ) => Promise<{
     keyInsights: string[]
     feedback: string[]
-    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    actionSteps: ActionStepData[]
     rawOutput: string
   } | null>
   executeInsightAction: (
     sourceType: string,
     sourceId: string,
     actionIndex: number
-  ) => Promise<{ success: boolean; error?: string }>
+  ) => Promise<{ success: boolean; messageId?: string; eventId?: string; error?: string }>
   getActionLog: (
     sourceType: string,
     sourceId: string
