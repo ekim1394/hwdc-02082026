@@ -48,8 +48,8 @@ function registerIpcHandlers(): void {
   // Google Auth
   ipcMain.handle('google-auth', async () => {
     try {
-      const success = await authenticate()
-      return { success }
+      const result = await authenticate()
+      return result
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       return { success: false, error: message }

@@ -14,21 +14,39 @@ function App(): React.JSX.Element {
   // Google auth state
   const [googleAuth, setGoogleAuth] = useState(false)
   const [authLoading, setAuthLoading] = useState(false)
+  const [authUrl, setAuthUrl] = useState<string | null>(null)
   const [authKey, setAuthKey] = useState(0) // bump to force SourcePicker re-fetch
 
   useEffect(() => {
     window.api.googleAuthStatus().then((res) => setGoogleAuth(res.authenticated))
   }, [])
 
+  // Poll for auth completion when authUrl is shown
+  useEffect(() => {
+    if (!authUrl) return
+    const interval = setInterval(async () => {
+      const res = await window.api.googleAuthStatus()
+      if (res.authenticated) {
+        setGoogleAuth(true)
+        setAuthUrl(null)
+        setAuthLoading(false)
+        setAuthKey((k) => k + 1)
+      }
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [authUrl])
+
   const handleGoogleConnect = useCallback(async () => {
     setAuthLoading(true)
-    try {
-      const result = await window.api.googleAuth()
-      if (result.success) {
-        setGoogleAuth(true)
-        setAuthKey((k) => k + 1) // force re-fetch
-      }
-    } finally {
+    const result = await window.api.googleAuth()
+    if (result.success) {
+      setGoogleAuth(true)
+      setAuthKey((k) => k + 1)
+      setAuthLoading(false)
+    } else if (result.authUrl) {
+      // Browser may not have opened — show the URL
+      setAuthUrl(result.authUrl)
+    } else {
       setAuthLoading(false)
     }
   }, [])
@@ -36,6 +54,7 @@ function App(): React.JSX.Element {
   const handleGoogleDisconnect = useCallback(async () => {
     await window.api.googleSignOut()
     setGoogleAuth(false)
+    setAuthUrl(null)
     setAuthKey((k) => k + 1) // force re-fetch with mock data
   }, [])
 
@@ -122,11 +141,23 @@ function App(): React.JSX.Element {
               onClick={handleGoogleConnect}
               disabled={authLoading}
             >
-              {authLoading ? '⏳ Connecting...' : '🔗 Connect Google'}
+              {authLoading ? '⏳ Waiting...' : '🔗 Connect Google'}
             </button>
           )}
         </div>
       </header>
+
+      {authUrl && (
+        <div className="auth-banner">
+          <span>Open this link in your browser to sign in:</span>
+          <a href={authUrl} target="_blank" rel="noreferrer" className="auth-link">
+            {authUrl.slice(0, 80)}...
+          </a>
+          <button className="action-btn" onClick={() => navigator.clipboard.writeText(authUrl)}>
+            📋 Copy URL
+          </button>
+        </div>
+      )}
 
       <main className="app-main">
         <SourcePicker key={authKey} onSelect={handleSelect} disabled={loading} />

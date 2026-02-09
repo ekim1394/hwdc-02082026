@@ -15,7 +15,7 @@ const api = {
   getEvents: (): Promise<unknown[]> => ipcRenderer.invoke('get-events'),
   runResearch: (input: { type: string; data: unknown }): Promise<ResearchApiResult> =>
     ipcRenderer.invoke('run-research', input),
-  googleAuth: (): Promise<{ success: boolean; error?: string }> =>
+  googleAuth: (): Promise<{ success: boolean; error?: string; authUrl?: string }> =>
     ipcRenderer.invoke('google-auth'),
   googleAuthStatus: (): Promise<{ authenticated: boolean }> =>
     ipcRenderer.invoke('google-auth-status'),

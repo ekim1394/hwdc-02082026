@@ -74,7 +74,7 @@ function initClient(): OAuth2Client {
  * 3. Exchange code for tokens
  * 4. Save tokens to disk
  */
-export async function authenticate(): Promise<boolean> {
+export async function authenticate(): Promise<{ success: boolean; authUrl?: string }> {
   const client = oAuth2Client || initClient()
 
   return new Promise((resolve) => {
@@ -108,20 +108,18 @@ export async function authenticate(): Promise<boolean> {
         )
 
         server.close()
-        resolve(true)
+        resolve({ success: true })
       } catch (err) {
         console.error('❌ Google auth error:', err)
         res.writeHead(500)
         res.end('Authentication failed')
         server.close()
-        resolve(false)
+        resolve({ success: false })
       }
     })
 
     server.listen(0, '127.0.0.1', () => {
       const port = (server.address() as { port: number }).port
-
-      // Update redirect URI with the actual port
       const updatedRedirectUri = `http://127.0.0.1:${port}`
 
       const authUrl = client.generateAuthUrl({
@@ -131,17 +129,23 @@ export async function authenticate(): Promise<boolean> {
         prompt: 'consent'
       })
 
-      console.log('🔐 Opening browser for Google auth on port', port)
-      shell.openExternal(authUrl)
+      console.log('🔐 Google auth URL:', authUrl)
+
+      // Try to open browser — may fail on WSL
+      shell.openExternal(authUrl).catch(() => {
+        console.log('⚠️ Could not open browser automatically. Use the URL in the app.')
+      })
+
+      // Return URL to renderer so user can click it
+      resolve({ success: false, authUrl })
     })
 
-    // Timeout after 2 minutes
+    // Timeout after 3 minutes
     setTimeout(() => {
       if (!isAuthenticated) {
         server.close()
-        resolve(false)
       }
-    }, 120_000)
+    }, 180_000)
   })
 }
 
