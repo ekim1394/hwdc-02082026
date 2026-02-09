@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import SourcePicker from './components/SourcePicker'
 import SourceDetail from './components/SourceDetail'
 import ResearchOutput from './components/ResearchOutput'
@@ -10,6 +10,42 @@ function App(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [inputType, setInputType] = useState<'email' | 'calendar' | null>(null)
   const [selectedData, setSelectedData] = useState<unknown | null>(null)
+
+  // --- Resizable split ---
+  const [splitPercent, setSplitPercent] = useState(40)
+  const isDragging = useRef(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseDown = useCallback(() => {
+    isDragging.current = true
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!isDragging.current || !contentRef.current) return
+      const rect = contentRef.current.getBoundingClientRect()
+      const y = e.clientY - rect.top
+      const percent = Math.min(Math.max((y / rect.height) * 100, 15), 85)
+      setSplitPercent(percent)
+    }
+
+    const handleMouseUp = (): void => {
+      if (isDragging.current) {
+        isDragging.current = false
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
 
   const handleSelect = useCallback(async (type: 'email' | 'calendar', data: unknown) => {
     setInputType(type)
@@ -50,13 +86,25 @@ function App(): React.JSX.Element {
 
       <main className="app-main">
         <SourcePicker onSelect={handleSelect} disabled={loading} />
-        <div className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
+        <div
+          ref={contentRef}
+          className={`content-area ${hasSelection ? 'has-selection' : ''}`}
+        >
           {hasSelection ? (
             <>
-              <div className="content-top">
+              <div className="content-top" style={{ height: `${splitPercent}%` }}>
                 <SourceDetail type={inputType} data={selectedData as never} />
               </div>
-              <div className="content-bottom">
+              <div
+                className="resize-handle"
+                onMouseDown={handleMouseDown}
+                role="separator"
+                aria-orientation="horizontal"
+                title="Drag to resize"
+              >
+                <div className="resize-handle-bar" />
+              </div>
+              <div className="content-bottom" style={{ height: `${100 - splitPercent}%` }}>
                 <ResearchOutput
                   output={output}
                   toolCalls={toolCalls}

@@ -1,4 +1,5 @@
 @import './base.css';
+@import "tailwindcss";
 
 /* ========================================
    Research Agent — Dark Theme Styling
@@ -81,10 +82,8 @@
 
 
 .content-top {
-  flex: 0 0 auto;
-  max-height: 45%;
   overflow-y: auto;
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
 }
 
 .content-top::-webkit-scrollbar {
@@ -96,8 +95,40 @@
   border-radius: 3px;
 }
 
+.resize-handle {
+  flex-shrink: 0;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+  background: rgba(0, 0, 0, 0.15);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.resize-handle:hover {
+  background: rgba(108, 92, 231, 0.15);
+}
+
+.resize-handle:active {
+  background: rgba(108, 92, 231, 0.25);
+}
+
+.resize-handle-bar {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background var(--transition);
+}
+
+.resize-handle:hover .resize-handle-bar {
+  background: var(--accent-light);
+}
+
 .content-bottom {
-  flex: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
