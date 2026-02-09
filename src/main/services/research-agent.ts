@@ -3,6 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic'
 import { LinkupClient } from 'linkup-sdk'
 import { z } from 'zod'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './mock-data'
+import * as db from './database'
 
 // Initialize Linkup client
 const linkup = new LinkupClient({ apiKey: '6bb8e0c3-3011-4ea9-a8ef-d72fe2be697d' })
@@ -124,21 +125,20 @@ export interface AgentResult {
   toolCalls: { tool: string; query: string }[]
 }
 
-// In-memory result cache keyed by "type:id"
-const resultCache = new Map<string, AgentResult>()
-
-function getCacheKey(input: ResearchInput): string {
-  const id = 'id' in input.data ? (input.data as { id: string }).id : ''
-  return `${input.type}:${id}`
+function getSourceId(input: ResearchInput): string {
+  return 'id' in input.data ? (input.data as { id: string }).id : ''
 }
 
 export async function runResearchAgent(input: ResearchInput): Promise<AgentResult> {
-  const cacheKey = getCacheKey(input)
-  const cached = resultCache.get(cacheKey)
+  const sourceId = getSourceId(input)
+
+  // Check DB cache first
+  const cached = db.getResearch(input.type, sourceId)
   if (cached) {
-    console.log(`⚡ Cache hit for ${cacheKey} — returning cached result`)
+    console.log(`⚡ DB cache hit for ${input.type}:${sourceId}`)
     return cached
   }
+
   const prompt =
     input.type === 'calendar'
       ? buildMeetingGuidePrompt(input.data as CalendarEvent)
@@ -197,8 +197,54 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
     toolCalls: toolCallLog
   }
 
-  resultCache.set(cacheKey, agentResult)
-  console.log(`   💾 Cached result for ${cacheKey}`)
+  // Save to DB and mark as processed
+  db.saveResearch(input.type, sourceId, agentResult)
+  db.markProcessed(input.type, sourceId)
+  console.log(`   💾 Saved result to DB for ${input.type}:${sourceId}`)
 
   return agentResult
+}
+
+// ---------------------------------------------------------------------------
+// Auto-processing pipeline
+// ---------------------------------------------------------------------------
+
+let isProcessing = false
+
+/**
+ * Process all unprocessed items in the database.
+ * Runs sequentially to avoid hammering the APIs.
+ * Calls onItemProcessed callback after each item completes.
+ */
+export async function processNewItems(
+  onItemProcessed?: (type: string, id: string) => void
+): Promise<number> {
+  if (isProcessing) {
+    console.log('⏳ Already processing — skipping')
+    return 0
+  }
+
+  const items = db.getUnprocessedItems()
+  if (items.length === 0) return 0
+
+  isProcessing = true
+  console.log(`\n🔄 Auto-processing ${items.length} new items...`)
+  let processed = 0
+
+  for (const item of items) {
+    try {
+      console.log(`\n🔄 [${processed + 1}/${items.length}] Processing ${item.type}:${item.id}`)
+      await runResearchAgent({ type: item.type, data: item.data })
+      processed++
+      onItemProcessed?.(item.type, item.id)
+    } catch (err) {
+      console.error(`❌ Failed to process ${item.type}:${item.id}:`, err)
+      // Mark as processed to avoid retrying forever
+      db.markProcessed(item.type, item.id)
+    }
+  }
+
+  isProcessing = false
+  console.log(`\n✅ Auto-processing complete: ${processed}/${items.length} items`)
+  return processed
 }

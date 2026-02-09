@@ -539,6 +539,38 @@ button {
   overflow: hidden;
 }
 
+/* Processing status dots */
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.status-dot.done {
+  background: #00d68f;
+  box-shadow: 0 0 4px rgba(0, 214, 143, 0.5);
+}
+
+.status-dot.processing {
+  background: #ffc107;
+  box-shadow: 0 0 4px rgba(255, 193, 7, 0.5);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
 /* --- Research Output --- */
 
 .research-output {

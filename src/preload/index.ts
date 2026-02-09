@@ -19,7 +19,24 @@ const api = {
     ipcRenderer.invoke('google-auth'),
   googleAuthStatus: (): Promise<{ authenticated: boolean }> =>
     ipcRenderer.invoke('google-auth-status'),
-  googleSignOut: (): Promise<{ success: boolean }> => ipcRenderer.invoke('google-sign-out')
+  googleSignOut: (): Promise<{ success: boolean }> => ipcRenderer.invoke('google-sign-out'),
+
+  // DB queries
+  getResearch: (
+    type: 'email' | 'calendar',
+    sourceId: string
+  ): Promise<{ output: string; toolCalls: { tool: string; query: string }[] } | null> =>
+    ipcRenderer.invoke('get-research', type, sourceId),
+  getProcessingStatuses: (): Promise<Record<string, 'pending' | 'done'>> =>
+    ipcRenderer.invoke('get-processing-statuses'),
+
+  // IPC events from main process
+  onItemProcessed: (callback: (data: { type: string; id: string }) => void): void => {
+    ipcRenderer.on('item-processed', (_event, data) => callback(data))
+  },
+  onProcessingComplete: (callback: () => void): void => {
+    ipcRenderer.on('processing-complete', () => callback())
+  }
 }
 
 if (process.contextIsolated) {

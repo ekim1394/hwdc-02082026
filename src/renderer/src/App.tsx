@@ -100,8 +100,19 @@ function App(): React.JSX.Element {
     setOutput(null)
     setToolCalls([])
     setError(null)
-    setLoading(true)
 
+    const itemId = (data as { id: string }).id
+
+    // Check DB cache first — show instantly if available
+    const cached = await window.api.getResearch(type, itemId)
+    if (cached) {
+      setOutput(cached.output)
+      setToolCalls(cached.toolCalls)
+      return
+    }
+
+    // No cache — run the agent
+    setLoading(true)
     try {
       const result = await window.api.runResearch({ type, data })
       if (result.success && result.data) {
@@ -116,6 +127,23 @@ function App(): React.JSX.Element {
       setLoading(false)
     }
   }, [])
+
+  // Auto-load research when background processing completes for current selection
+  useEffect(() => {
+    window.api.onItemProcessed(async (data) => {
+      if (inputType && selectedData) {
+        const currentId = (selectedData as { id: string }).id
+        if (data.type === inputType && data.id === currentId) {
+          const cached = await window.api.getResearch(inputType, currentId)
+          if (cached) {
+            setOutput(cached.output)
+            setToolCalls(cached.toolCalls)
+            setLoading(false)
+          }
+        }
+      }
+    })
+  }, [inputType, selectedData])
 
   const hasSelection = inputType !== null
 

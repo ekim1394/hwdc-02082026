@@ -4,17 +4,20 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as dotenv from 'dotenv'
 import { getEmails as getMockEmails, getEvents as getMockEvents } from './services/mock-data'
-import { runResearchAgent } from './services/research-agent'
+import { runResearchAgent, processNewItems } from './services/research-agent'
 import { authenticate, getAuthStatus, signOut } from './services/google-auth'
 import { getGmailEmails } from './services/gmail-service'
 import { getCalendarEvents } from './services/calendar-service'
-import type { ResearchInput } from './services/mock-data'
+import * as db from './services/database'
+import type { ResearchInput, EmailMessage, CalendarEvent } from './services/mock-data'
 
 // Load environment variables
 dotenv.config()
 
+let mainWindow: BrowserWindow | null = null
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
@@ -27,7 +30,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow!.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -42,7 +45,79 @@ function createWindow(): void {
   }
 }
 
-// --- IPC Handlers ---
+// ---------------------------------------------------------------------------
+// Fetch + upsert + auto-process pipeline
+// ---------------------------------------------------------------------------
+
+async function fetchAndUpsertEmails(): Promise<EmailMessage[]> {
+  let emails: EmailMessage[]
+
+  if (getAuthStatus()) {
+    try {
+      emails = await getGmailEmails()
+    } catch (error) {
+      console.error('Failed to fetch Gmail, falling back to mock:', error)
+      emails = getMockEmails()
+    }
+  } else {
+    emails = getMockEmails()
+  }
+
+  const newCount = db.upsertEmails(emails)
+  if (newCount > 0) {
+    console.log(`📧 ${newCount} new emails → queuing auto-processing`)
+    triggerAutoProcess()
+  }
+
+  return db.getAllEmails()
+}
+
+async function fetchAndUpsertEvents(): Promise<CalendarEvent[]> {
+  let events: CalendarEvent[]
+
+  if (getAuthStatus()) {
+    try {
+      events = await getCalendarEvents()
+    } catch (error) {
+      console.error('Failed to fetch Calendar, falling back to mock:', error)
+      events = getMockEvents()
+    }
+  } else {
+    events = getMockEvents()
+  }
+
+  const newCount = db.upsertEvents(events)
+  if (newCount > 0) {
+    console.log(`📅 ${newCount} new events → queuing auto-processing`)
+    triggerAutoProcess()
+  }
+
+  return db.getAllEvents()
+}
+
+/**
+ * Trigger auto-processing in the background.
+ * Sends IPC events to the renderer when items are processed.
+ */
+function triggerAutoProcess(): void {
+  // Debounce — wait 1s for both emails and events to upsert
+  setTimeout(async () => {
+    await processNewItems((type, id) => {
+      // Notify renderer that an item was processed
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('item-processed', { type, id })
+      }
+    })
+    // Notify renderer to refresh statuses
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('processing-complete')
+    }
+  }, 1000)
+}
+
+// ---------------------------------------------------------------------------
+// IPC Handlers
+// ---------------------------------------------------------------------------
 
 function registerIpcHandlers(): void {
   // Google Auth
@@ -65,33 +140,17 @@ function registerIpcHandlers(): void {
     return { success: true }
   })
 
-  // Emails — use Gmail API if authenticated, otherwise mock data
+  // Emails — fetch, upsert to DB, return from DB
   ipcMain.handle('get-emails', async () => {
-    if (getAuthStatus()) {
-      try {
-        return await getGmailEmails()
-      } catch (error) {
-        console.error('Failed to fetch Gmail, falling back to mock:', error)
-        return getMockEmails()
-      }
-    }
-    return getMockEmails()
+    return await fetchAndUpsertEmails()
   })
 
-  // Events — use Calendar API if authenticated, otherwise mock data
+  // Events — fetch, upsert to DB, return from DB
   ipcMain.handle('get-events', async () => {
-    if (getAuthStatus()) {
-      try {
-        return await getCalendarEvents()
-      } catch (error) {
-        console.error('Failed to fetch Calendar, falling back to mock:', error)
-        return getMockEvents()
-      }
-    }
-    return getMockEvents()
+    return await fetchAndUpsertEvents()
   })
 
-  // Research agent
+  // Research agent — manual trigger (also checks DB cache)
   ipcMain.handle('run-research', async (_event, input: ResearchInput) => {
     try {
       const result = await runResearchAgent(input)
@@ -101,7 +160,21 @@ function registerIpcHandlers(): void {
       return { success: false, error: message }
     }
   })
+
+  // Get cached research from DB
+  ipcMain.handle('get-research', (_event, type: 'email' | 'calendar', sourceId: string) => {
+    return db.getResearch(type, sourceId)
+  })
+
+  // Get processing statuses for all items
+  ipcMain.handle('get-processing-statuses', () => {
+    return db.getAllProcessingStatuses()
+  })
 }
+
+// ---------------------------------------------------------------------------
+// App lifecycle
+// ---------------------------------------------------------------------------
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
@@ -109,6 +182,9 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  // Initialize database
+  db.initDatabase()
 
   registerIpcHandlers()
   createWindow()

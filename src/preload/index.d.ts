@@ -36,6 +36,13 @@ interface Api {
   googleAuth: () => Promise<{ success: boolean; error?: string; authUrl?: string }>
   googleAuthStatus: () => Promise<{ authenticated: boolean }>
   googleSignOut: () => Promise<{ success: boolean }>
+  getResearch: (
+    type: 'email' | 'calendar',
+    sourceId: string
+  ) => Promise<{ output: string; toolCalls: { tool: string; query: string }[] } | null>
+  getProcessingStatuses: () => Promise<Record<string, 'pending' | 'done'>>
+  onItemProcessed: (callback: (data: { type: string; id: string }) => void) => void
+  onProcessingComplete: (callback: () => void) => void
 }
 
 declare global {
