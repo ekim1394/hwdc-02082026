@@ -10,6 +10,17 @@ export interface ResearchApiResult {
   error?: string
 }
 
+export interface InsightsApiResult {
+  success: boolean
+  data?: {
+    keyInsights: string[]
+    feedback: string[]
+    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    rawOutput: string
+  }
+  error?: string
+}
+
 const api = {
   getEmails: (): Promise<unknown[]> => ipcRenderer.invoke('get-emails'),
   getEvents: (): Promise<unknown[]> => ipcRenderer.invoke('get-events'),
@@ -36,7 +47,33 @@ const api = {
   },
   onProcessingComplete: (callback: () => void): void => {
     ipcRenderer.on('processing-complete', () => callback())
-  }
+  },
+
+  // Insights Agent
+  getExternalReplies: (): Promise<unknown[]> => ipcRenderer.invoke('get-external-replies'),
+  getMeetingTranscripts: (): Promise<unknown[]> => ipcRenderer.invoke('get-meeting-transcripts'),
+  runInsights: (input: { type: string; data: unknown }): Promise<InsightsApiResult> =>
+    ipcRenderer.invoke('run-insights', input),
+  getInsights: (
+    type: string,
+    sourceId: string
+  ): Promise<{
+    keyInsights: string[]
+    feedback: string[]
+    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    rawOutput: string
+  } | null> => ipcRenderer.invoke('get-insights', type, sourceId),
+  executeInsightAction: (
+    sourceType: string,
+    sourceId: string,
+    actionIndex: number
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('execute-insight-action', sourceType, sourceId, actionIndex),
+  getActionLog: (
+    sourceType: string,
+    sourceId: string
+  ): Promise<{ actionIndex: number; status: string; executedAt: string }[]> =>
+    ipcRenderer.invoke('get-action-log', sourceType, sourceId)
 }
 
 if (process.contextIsolated) {

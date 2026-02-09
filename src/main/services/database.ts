@@ -2,6 +2,8 @@ import Database from 'better-sqlite3'
 import * as path from 'path'
 import type { EmailMessage, CalendarEvent } from './mock-data'
 import type { AgentResult } from './research-agent'
+import type { InsightsResult } from './insights-agent'
+import type { InsightsInputType } from './insights-mock-data'
 
 const DB_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.research-agent.db')
 
@@ -49,6 +51,27 @@ export function initDatabase(): void {
       tool_calls TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now')),
       UNIQUE(source_type, source_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS insights_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      key_insights TEXT NOT NULL,
+      feedback TEXT NOT NULL,
+      action_steps TEXT NOT NULL,
+      raw_output TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(source_type, source_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS insights_action_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_type TEXT NOT NULL,
+      source_id TEXT NOT NULL,
+      action_index INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      executed_at TEXT DEFAULT (datetime('now'))
     );
   `)
 
@@ -104,6 +127,24 @@ export function upsertEmails(emails: EmailMessage[]): number {
   tx()
 
   return newCount
+}
+
+export function getExistingEmailIds(): Set<string> {
+  return new Set(
+    getDb()
+      .prepare('SELECT id FROM emails')
+      .all()
+      .map((row) => (row as { id: string }).id)
+  )
+}
+
+export function getExistingEventIds(): Set<string> {
+  return new Set(
+    getDb()
+      .prepare('SELECT id FROM events')
+      .all()
+      .map((row) => (row as { id: string }).id)
+  )
 }
 
 export function getAllEmails(): EmailMessage[] {
@@ -330,4 +371,89 @@ export function getAllProcessingStatuses(): Record<string, 'pending' | 'done'> {
   }
 
   return statuses
+}
+
+// ---------------------------------------------------------------------------
+// Insights results
+// ---------------------------------------------------------------------------
+
+export function saveInsights(
+  type: InsightsInputType,
+  sourceId: string,
+  result: InsightsResult
+): void {
+  getDb()
+    .prepare(
+      `INSERT INTO insights_results (source_type, source_id, key_insights, feedback, action_steps, raw_output)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(source_type, source_id) DO UPDATE SET
+         key_insights=excluded.key_insights, feedback=excluded.feedback,
+         action_steps=excluded.action_steps, raw_output=excluded.raw_output,
+         created_at=datetime('now')`
+    )
+    .run(
+      type,
+      sourceId,
+      JSON.stringify(result.keyInsights),
+      JSON.stringify(result.feedback),
+      JSON.stringify(result.actionSteps),
+      result.rawOutput
+    )
+}
+
+export function getInsights(type: InsightsInputType, sourceId: string): InsightsResult | null {
+  const row = getDb()
+    .prepare(
+      'SELECT key_insights, feedback, action_steps, raw_output FROM insights_results WHERE source_type = ? AND source_id = ?'
+    )
+    .get(type, sourceId) as
+    | { key_insights: string; feedback: string; action_steps: string; raw_output: string }
+    | undefined
+
+  if (!row) return null
+  return {
+    keyInsights: JSON.parse(row.key_insights),
+    feedback: JSON.parse(row.feedback),
+    actionSteps: JSON.parse(row.action_steps),
+    rawOutput: row.raw_output
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Insights action log
+// ---------------------------------------------------------------------------
+
+export function logActionExecution(
+  sourceType: InsightsInputType,
+  sourceId: string,
+  actionIndex: number,
+  status: string
+): void {
+  getDb()
+    .prepare(
+      `INSERT INTO insights_action_log (source_type, source_id, action_index, status)
+       VALUES (?, ?, ?, ?)`
+    )
+    .run(sourceType, sourceId, actionIndex, status)
+}
+
+export function getActionLog(
+  sourceType: InsightsInputType,
+  sourceId: string
+): { actionIndex: number; status: string; executedAt: string }[] {
+  const rows = getDb()
+    .prepare(
+      'SELECT action_index, status, executed_at FROM insights_action_log WHERE source_type = ? AND source_id = ? ORDER BY executed_at DESC'
+    )
+    .all(sourceType, sourceId) as {
+    action_index: number
+    status: string
+    executed_at: string
+  }[]
+
+  return rows.map((r) => ({
+    actionIndex: r.action_index,
+    status: r.status,
+    executedAt: r.executed_at
+  }))
 }

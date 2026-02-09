@@ -9,6 +9,17 @@ interface ResearchApiResult {
   error?: string
 }
 
+interface InsightsApiResult {
+  success: boolean
+  data?: {
+    keyInsights: string[]
+    feedback: string[]
+    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    rawOutput: string
+  }
+  error?: string
+}
+
 interface Api {
   getEmails: () => Promise<
     {
@@ -43,6 +54,47 @@ interface Api {
   getProcessingStatuses: () => Promise<Record<string, 'pending' | 'done'>>
   onItemProcessed: (callback: (data: { type: string; id: string }) => void) => void
   onProcessingComplete: (callback: () => void) => void
+
+  // Insights Agent
+  getExternalReplies: () => Promise<
+    {
+      id: string
+      from: string
+      to: string
+      subject: string
+      body: string
+      originalEmailSubject: string
+      date: string
+    }[]
+  >
+  getMeetingTranscripts: () => Promise<
+    {
+      id: string
+      title: string
+      date: string
+      participants: { name: string; role?: string }[]
+      transcript: string
+    }[]
+  >
+  runInsights: (input: { type: string; data: unknown }) => Promise<InsightsApiResult>
+  getInsights: (
+    type: string,
+    sourceId: string
+  ) => Promise<{
+    keyInsights: string[]
+    feedback: string[]
+    actionSteps: { type: 'email' | 'meeting'; description: string; details: string }[]
+    rawOutput: string
+  } | null>
+  executeInsightAction: (
+    sourceType: string,
+    sourceId: string,
+    actionIndex: number
+  ) => Promise<{ success: boolean; error?: string }>
+  getActionLog: (
+    sourceType: string,
+    sourceId: string
+  ) => Promise<{ actionIndex: number; status: string; executedAt: string }[]>
 }
 
 declare global {

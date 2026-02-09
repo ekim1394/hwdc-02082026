@@ -5,6 +5,9 @@ import icon from '../../resources/icon.png?asset'
 import * as dotenv from 'dotenv'
 import { getEmails as getMockEmails, getEvents as getMockEvents } from './services/mock-data'
 import { runResearchAgent, processNewItems } from './services/research-agent'
+import { runInsightsAgent, executeAction } from './services/insights-agent'
+import { getExternalReplies, getMeetingTranscripts } from './services/insights-mock-data'
+import type { InsightsInput } from './services/insights-mock-data'
 import { authenticate, getAuthStatus, signOut } from './services/google-auth'
 import { getGmailEmails } from './services/gmail-service'
 import { getCalendarEvents } from './services/calendar-service'
@@ -54,7 +57,8 @@ async function fetchAndUpsertEmails(): Promise<EmailMessage[]> {
 
   if (getAuthStatus()) {
     try {
-      emails = await getGmailEmails()
+      const knownIds = db.getExistingEmailIds()
+      emails = await getGmailEmails(10, knownIds)
     } catch (error) {
       console.error('Failed to fetch Gmail, falling back to mock:', error)
       emails = getMockEmails()
@@ -169,6 +173,51 @@ function registerIpcHandlers(): void {
   // Get processing statuses for all items
   ipcMain.handle('get-processing-statuses', () => {
     return db.getAllProcessingStatuses()
+  })
+
+  // --- Insights Agent handlers ---
+
+  ipcMain.handle('get-external-replies', () => {
+    return getExternalReplies()
+  })
+
+  ipcMain.handle('get-meeting-transcripts', () => {
+    return getMeetingTranscripts()
+  })
+
+  ipcMain.handle('run-insights', async (_event, input: InsightsInput) => {
+    try {
+      const result = await runInsightsAgent(input)
+      return { success: true, data: result }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('get-insights', (_event, type: string, sourceId: string) => {
+    return db.getInsights(type as 'email-reply' | 'transcript', sourceId)
+  })
+
+  ipcMain.handle(
+    'execute-insight-action',
+    async (_event, sourceType: string, sourceId: string, actionIndex: number) => {
+      try {
+        const result = await executeAction(
+          sourceType as 'email-reply' | 'transcript',
+          sourceId,
+          actionIndex
+        )
+        return { success: true, data: result }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('get-action-log', (_event, sourceType: string, sourceId: string) => {
+    return db.getActionLog(sourceType as 'email-reply' | 'transcript', sourceId)
   })
 }
 

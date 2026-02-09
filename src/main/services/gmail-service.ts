@@ -54,7 +54,10 @@ function getHeader(headers: { name?: string; value?: string }[], name: string): 
  * Fetch recent emails from Gmail API.
  * Returns data in the same shape as the mock EmailMessage interface.
  */
-export async function getGmailEmails(maxResults = 10): Promise<EmailMessage[]> {
+export async function getGmailEmails(
+  maxResults = 10,
+  knownIds?: Set<string>
+): Promise<EmailMessage[]> {
   const auth = getAuthClient()
   if (!auth) {
     throw new Error('Not authenticated with Google')
@@ -77,10 +80,22 @@ export async function getGmailEmails(maxResults = 10): Promise<EmailMessage[]> {
     return []
   }
 
-  // Fetch full message details
+  // Filter out messages we already have
+  const newMessageIds = knownIds ? messageIds.filter((msg) => !knownIds.has(msg.id!)) : messageIds
+
+  if (newMessageIds.length === 0) {
+    console.log('📧 No new emails to fetch (all already in DB)')
+    return []
+  }
+
+  console.log(
+    `📧 ${newMessageIds.length} new emails to fetch (${messageIds.length - newMessageIds.length} skipped)`
+  )
+
+  // Fetch full message details only for new messages
   const emails: EmailMessage[] = []
 
-  for (const msg of messageIds) {
+  for (const msg of newMessageIds) {
     try {
       const detail = await gmail.users.messages.get({
         userId: 'me',
@@ -110,6 +125,6 @@ export async function getGmailEmails(maxResults = 10): Promise<EmailMessage[]> {
     }
   }
 
-  console.log(`📧 Fetched ${emails.length} emails`)
+  console.log(`📧 Fetched ${emails.length} new emails`)
   return emails
 }
