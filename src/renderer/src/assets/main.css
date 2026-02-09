@@ -25,7 +25,8 @@ button {
   -webkit-appearance: none;
   outline: none;
   background: none;
-  border: none;
+  border: 0 none transparent;
+  border-style: none;
   padding: 0;
   margin: 0;
   font: inherit;
@@ -301,7 +302,7 @@ button {
 .tab {
   flex: 1;
   padding: 8px 12px;
-  border: none;
+  border: 0 none transparent;
   border-radius: 6px;
   background: transparent;
   color: var(--ev-c-text-2);
@@ -357,8 +358,9 @@ button {
   width: 100%;
   text-align: left;
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 0 none transparent;
   border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--border);
   background: var(--ev-c-black-soft);
   color: var(--ev-c-text-1);
   cursor: pointer;
@@ -372,14 +374,13 @@ button {
 
 .picker-item:hover:not(:disabled) {
   background: var(--ev-c-black-mute);
-  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   transform: translateY(-1px);
 }
 
 .picker-item.selected {
   background: var(--surface-active);
-  border-color: var(--border-active);
-  box-shadow: 0 0 20px var(--accent-glow);
+  box-shadow: inset 0 0 0 1px var(--border-active), 0 0 20px var(--accent-glow);
 }
 
 .picker-item:disabled {
@@ -645,8 +646,9 @@ button {
 
 .action-btn {
   padding: 7px 14px;
-  border: 1px solid var(--border);
+  border: 0 none transparent;
   border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--border);
   background: var(--surface);
   color: var(--ev-c-text-1);
   font-size: 13px;
@@ -660,7 +662,7 @@ button {
 
 .action-btn:hover:not(:disabled) {
   background: var(--surface-hover);
-  border-color: var(--accent-light);
+  box-shadow: inset 0 0 0 1px var(--accent-light);
 }
 
 .action-btn:disabled {
@@ -669,12 +671,12 @@ button {
 }
 
 .copy-btn:hover:not(:disabled) {
-  border-color: #74b9ff;
+  box-shadow: inset 0 0 0 1px #74b9ff;
   color: #74b9ff;
 }
 
 .send-btn:hover:not(:disabled) {
-  border-color: #55efc4;
+  box-shadow: inset 0 0 0 1px #55efc4;
   color: #55efc4;
 }
 
