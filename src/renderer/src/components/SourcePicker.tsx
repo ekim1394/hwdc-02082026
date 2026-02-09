@@ -41,8 +41,13 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
-    window.api.getEmails().then(setEmails)
-    window.api.getEvents().then(setEvents)
+    const fetchData = (): void => {
+      window.api.getEmails().then(setEmails)
+      window.api.getEvents().then(setEvents)
+    }
+    fetchData()
+    const interval = setInterval(fetchData, 60_000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleSelect = (type: 'email' | 'calendar', item: Email | CalendarEvent): void => {
