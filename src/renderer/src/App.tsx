@@ -2,8 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import SourcePicker from './components/SourcePicker'
 import SourceDetail from './components/SourceDetail'
 import ResearchOutput from './components/ResearchOutput'
+import InsightsPage from './components/InsightsPage'
+
+type PageView = 'research' | 'insights'
 
 function App(): React.JSX.Element {
+  const [activePage, setActivePage] = useState<PageView>('research')
+
+  // --- Research Agent state ---
   const [output, setOutput] = useState<string | null>(null)
   const [toolCalls, setToolCalls] = useState<{ tool: string; query: string }[]>([])
   const [loading, setLoading] = useState(false)
@@ -149,82 +155,118 @@ function App(): React.JSX.Element {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="app-logo">
-          <span className="logo-icon">🧠</span>
-          <h1>Research Agent</h1>
-        </div>
-        <div className="header-right">
-          <div className={`auth-status ${googleAuth ? 'connected' : ''}`}>
-            <span className="auth-dot" />
-            {googleAuth ? 'Google Connected' : 'Using Mock Data'}
-          </div>
-          {googleAuth ? (
-            <button className="auth-btn disconnect" onClick={handleGoogleDisconnect}>
-              Disconnect
-            </button>
-          ) : (
-            <button
-              className="auth-btn connect"
-              onClick={handleGoogleConnect}
-              disabled={authLoading}
-            >
-              {authLoading ? '⏳ Waiting...' : '🔗 Connect Google'}
-            </button>
+      {/* ---- Page Navigation ---- */}
+      <nav className="page-nav">
+        <button
+          className={`page-nav-tab ${activePage === 'research' ? 'active' : ''}`}
+          onClick={() => setActivePage('research')}
+        >
+          <span className="page-nav-icon">🧠</span>
+          Research Agent
+        </button>
+        <button
+          className={`page-nav-tab ${activePage === 'insights' ? 'active' : ''}`}
+          onClick={() => setActivePage('insights')}
+        >
+          <span className="page-nav-icon">🔎</span>
+          Insights Agent
+        </button>
+      </nav>
+
+      {activePage === 'research' ? (
+        /* ---- Research Agent Page ---- */
+        <>
+          <header className="app-header">
+            <div className="app-logo">
+              <span className="logo-icon">🧠</span>
+              <h1>Research Agent</h1>
+            </div>
+            <div className="header-right">
+              <div className={`auth-status ${googleAuth ? 'connected' : ''}`}>
+                <span className="auth-dot" />
+                {googleAuth ? 'Google Connected' : 'Using Mock Data'}
+              </div>
+              {googleAuth ? (
+                <button className="auth-btn disconnect" onClick={handleGoogleDisconnect}>
+                  Disconnect
+                </button>
+              ) : (
+                <button
+                  className="auth-btn connect"
+                  onClick={handleGoogleConnect}
+                  disabled={authLoading}
+                >
+                  {authLoading ? '⏳ Waiting...' : '🔗 Connect Google'}
+                </button>
+              )}
+            </div>
+          </header>
+
+          {authUrl && (
+            <div className="auth-banner">
+              <span>Open this link in your browser to sign in:</span>
+              <a href={authUrl} target="_blank" rel="noreferrer" className="auth-link">
+                {authUrl.slice(0, 80)}...
+              </a>
+              <button className="action-btn" onClick={() => navigator.clipboard.writeText(authUrl)}>
+                📋 Copy URL
+              </button>
+            </div>
           )}
-        </div>
-      </header>
 
-      {authUrl && (
-        <div className="auth-banner">
-          <span>Open this link in your browser to sign in:</span>
-          <a href={authUrl} target="_blank" rel="noreferrer" className="auth-link">
-            {authUrl.slice(0, 80)}...
-          </a>
-          <button className="action-btn" onClick={() => navigator.clipboard.writeText(authUrl)}>
-            📋 Copy URL
-          </button>
-        </div>
-      )}
-
-      <main className="app-main">
-        <SourcePicker key={authKey} onSelect={handleSelect} disabled={false} />
-        <div ref={contentRef} className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
-          {hasSelection ? (
-            <>
-              <div className="content-top" style={{ height: `${splitPercent}%` }}>
-                <SourceDetail type={inputType} data={selectedData as never} />
-              </div>
-              <div
-                className="resize-handle"
-                onMouseDown={handleMouseDown}
-                role="separator"
-                aria-orientation="horizontal"
-                title="Drag to resize"
-              >
-                <div className="resize-handle-bar" />
-              </div>
-              <div className="content-bottom" style={{ height: `${100 - splitPercent}%` }}>
+          <main className="app-main">
+            <SourcePicker key={authKey} onSelect={handleSelect} disabled={false} />
+            <div ref={contentRef} className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
+              {hasSelection ? (
+                <>
+                  <div className="content-top" style={{ height: `${splitPercent}%` }}>
+                    <SourceDetail type={inputType} data={selectedData as never} />
+                  </div>
+                  <div
+                    className="resize-handle"
+                    onMouseDown={handleMouseDown}
+                    role="separator"
+                    aria-orientation="horizontal"
+                    title="Drag to resize"
+                  >
+                    <div className="resize-handle-bar" />
+                  </div>
+                  <div className="content-bottom" style={{ height: `${100 - splitPercent}%` }}>
+                    <ResearchOutput
+                      output={output}
+                      toolCalls={toolCalls}
+                      loading={loading}
+                      error={error}
+                      inputType={inputType}
+                    />
+                  </div>
+                </>
+              ) : (
                 <ResearchOutput
-                  output={output}
-                  toolCalls={toolCalls}
-                  loading={loading}
-                  error={error}
-                  inputType={inputType}
+                  output={null}
+                  toolCalls={[]}
+                  loading={false}
+                  error={null}
+                  inputType={null}
                 />
-              </div>
-            </>
-          ) : (
-            <ResearchOutput
-              output={null}
-              toolCalls={[]}
-              loading={false}
-              error={null}
-              inputType={null}
-            />
-          )}
-        </div>
-      </main>
+              )}
+            </div>
+          </main>
+        </>
+      ) : (
+        /* ---- Insights Agent Page ---- */
+        <>
+          <header className="app-header">
+            <div className="app-logo">
+              <span className="logo-icon">🔎</span>
+              <h1>Insights Agent</h1>
+            </div>
+          </header>
+          <main className="app-main">
+            <InsightsPage />
+          </main>
+        </>
+      )}
     </div>
   )
 }
