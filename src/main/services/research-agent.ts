@@ -5,7 +5,7 @@ import { z } from 'zod'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './mock-data'
 
 // Initialize Linkup client
-const linkup = new LinkupClient({ apiKey: process.env.LINKUP_API_KEY ?? '' })
+const linkup = new LinkupClient({ apiKey: '6bb8e0c3-3011-4ea9-a8ef-d72fe2be697d' })
 
 // --- Tool schema ---
 
@@ -165,7 +165,21 @@ export interface AgentResult {
   toolCalls: { tool: string; query: string }[]
 }
 
+// In-memory result cache keyed by "type:id"
+const resultCache = new Map<string, AgentResult>()
+
+function getCacheKey(input: ResearchInput): string {
+  const id = 'id' in input.data ? (input.data as { id: string }).id : ''
+  return `${input.type}:${id}`
+}
+
 export async function runResearchAgent(input: ResearchInput): Promise<AgentResult> {
+  const cacheKey = getCacheKey(input)
+  const cached = resultCache.get(cacheKey)
+  if (cached) {
+    console.log(`⚡ Cache hit for ${cacheKey} — returning cached result`)
+    return cached
+  }
   const prompt =
     input.type === 'calendar'
       ? buildMeetingGuidePrompt(input.data as CalendarEvent)
@@ -219,8 +233,13 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
   console.log(`   Output: ${result.text.length} chars`)
   console.log('='.repeat(60) + '\n')
 
-  return {
+  const agentResult: AgentResult = {
     output: result.text,
     toolCalls: toolCallLog
   }
+
+  resultCache.set(cacheKey, agentResult)
+  console.log(`   💾 Cached result for ${cacheKey}`)
+
+  return agentResult
 }
