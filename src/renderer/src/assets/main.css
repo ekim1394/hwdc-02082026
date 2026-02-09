@@ -1,5 +1,5 @@
 @import './base.css';
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ========================================
    Research Agent — Dark Theme Styling
@@ -79,7 +79,6 @@
   flex-direction: column;
   overflow: hidden;
 }
-
 
 .content-top {
   overflow-y: auto;
@@ -615,9 +614,60 @@
   box-shadow: 0 2px 12px var(--accent-glow);
 }
 
+.output-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .output-meta {
   font-size: 12px;
   color: var(--ev-c-text-3);
+}
+
+.action-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ev-c-text-1);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--accent-light);
+}
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.copy-btn:hover:not(:disabled) {
+  border-color: #74b9ff;
+  color: #74b9ff;
+}
+
+.send-btn:hover:not(:disabled) {
+  border-color: #55efc4;
+  color: #55efc4;
+}
+
+/* Email draft: clean readable style */
+.output-content.email-draft {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  white-space: pre-wrap;
+  line-height: 1.8;
 }
 
 .output-content {

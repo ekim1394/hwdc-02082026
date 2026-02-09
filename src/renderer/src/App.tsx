@@ -86,10 +86,7 @@ function App(): React.JSX.Element {
 
       <main className="app-main">
         <SourcePicker onSelect={handleSelect} disabled={loading} />
-        <div
-          ref={contentRef}
-          className={`content-area ${hasSelection ? 'has-selection' : ''}`}
-        >
+        <div ref={contentRef} className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
           {hasSelection ? (
             <>
               <div className="content-top" style={{ height: `${splitPercent}%` }}>

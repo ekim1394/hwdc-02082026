@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface ResearchOutputProps {
   output: string | null
   toolCalls: { tool: string; query: string }[]
@@ -7,33 +9,21 @@ interface ResearchOutputProps {
 }
 
 function renderMarkdown(text: string): string {
-  // Lightweight markdown → HTML conversion for display
   let html = text
-    // Code blocks
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-    // Inline code
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Headers
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-    // Unordered lists
     .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // Numbered lists
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    // Paragraphs (double newlines)
     .replace(/\n\n/g, '</p><p>')
-    // Line breaks
     .replace(/\n/g, '<br/>')
 
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/((?:<li>.*?<\/li><br\/>?)+)/g, '<ul>$1</ul>')
+  html = html.replace(/((?:<li>.*?<\/li><br\/?>)+)/g, '<ul>$1</ul>')
   html = html.replace(/<ul><br\/>/g, '<ul>')
 
   return `<p>${html}</p>`
@@ -46,6 +36,16 @@ export default function ResearchOutput({
   error,
   inputType
 }: ResearchOutputProps): React.JSX.Element {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = (): void => {
+    if (!output) return
+    navigator.clipboard.writeText(output).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
   if (loading) {
     return (
       <div className="research-output">
@@ -54,7 +54,7 @@ export default function ResearchOutput({
           <h3>Researching...</h3>
           <p className="loading-sub">
             {inputType === 'calendar'
-              ? 'Preparing your meeting guide'
+              ? 'Preparing your meeting briefing'
               : 'Drafting your email reply'}
           </p>
           {toolCalls.length > 0 && (
@@ -99,7 +99,7 @@ export default function ResearchOutput({
             </div>
             <div className="hint">
               <span className="hint-icon">📅</span>
-              <span>Event → Meeting Guide</span>
+              <span>Event → Briefing</span>
             </div>
           </div>
         </div>
@@ -107,33 +107,31 @@ export default function ResearchOutput({
     )
   }
 
+  const isEmail = inputType === 'email'
+
   return (
     <div className="research-output">
       <div className="output-header">
-        <div className="output-badge">
-          {inputType === 'calendar' ? '📋 Meeting Guide' : '✏️ Draft Reply'}
+        <div className="output-badge">{isEmail ? '✏️ Draft Reply' : '📋 Meeting Briefing'}</div>
+        <div className="output-actions">
+          {isEmail && (
+            <>
+              <button className="action-btn copy-btn" onClick={handleCopy}>
+                {copied ? '✓ Copied' : '📋 Copy Draft'}
+              </button>
+              <button className="action-btn send-btn" disabled title="Send via Gmail (coming soon)">
+                ✉️ Send
+              </button>
+            </>
+          )}
+          {toolCalls.length > 0 && <span className="output-meta">{toolCalls.length} searches</span>}
         </div>
-        {toolCalls.length > 0 && (
-          <div className="output-meta">{toolCalls.length} searches performed</div>
-        )}
       </div>
 
       <div
-        className="output-content"
+        className={`output-content ${isEmail ? 'email-draft' : ''}`}
         dangerouslySetInnerHTML={{ __html: renderMarkdown(output) }}
       />
-
-      {toolCalls.length > 0 && (
-        <div className="tool-calls-summary">
-          <h4>Research Queries</h4>
-          {toolCalls.map((tc, i) => (
-            <div key={i} className="tool-call-item">
-              <span className="tool-call-icon">🔍</span>
-              <span className="tool-call-query">{tc.query}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

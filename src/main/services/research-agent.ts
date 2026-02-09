@@ -73,89 +73,48 @@ const linkupSearchTool: Tool<SearchInput, SearchOutput> = {
 function buildMeetingGuidePrompt(event: CalendarEvent): string {
   const attendeeList = event.attendees
     .filter((a) => a.email !== 'me@mycompany.com')
-    .map((a) => `- ${a.name} (${a.email}${a.company ? `, ${a.company}` : ''})`)
+    .map((a) => `- ${a.name}${a.company ? ` (${a.company})` : ''}`)
     .join('\n')
 
-  return `You are a research assistant preparing a comprehensive meeting guide.
+  return `Prepare a brief meeting briefing. Research the attendees and topic, then provide ONLY the following — keep it concise:
 
-## Meeting Details
-- **Title:** ${event.summary}
-- **Date:** ${event.start} to ${event.end}
-- **Location:** ${event.location ?? 'TBD'}
-- **Description:** ${event.description}
+Meeting: ${event.summary}
+Date: ${event.start}
+${event.location ? `Location: ${event.location}` : ''}
+Description: ${event.description}
 
-## Attendees
+Attendees:
 ${attendeeList}
 
-## Your Task
-Research the attendees, their companies, and the meeting topic to produce a meeting preparation guide. Use the linkupSearch tool to gather information.
+Your output format (use markdown):
 
-Your output MUST follow this exact structure:
+## Who You're Meeting
+One line per attendee: their name, title, and one key fact.
 
-# Meeting Guide: ${event.summary}
+## Talking Points
+3-5 bullet points. Each should be specific and informed by your research.
 
-## Attendee Profiles
-For each external attendee, provide:
-- Their role and background
-- Their company overview and recent news
-- Any relevant connections or shared interests
+## Key Context
+2-3 bullets of important background (company news, industry trends, anything relevant).
 
-## Key Talking Points
-- 3-5 specific, informed talking points based on your research
-- Reference specific facts you discovered
-
-## Suggested Agenda
-- A structured agenda for the meeting duration
-- Include time allocations
-
-## Potential Questions to Ask
-- 3-4 thoughtful questions informed by your research
-
-## Background Context
-- Relevant industry trends or news
-- Any competitive intelligence
-
-## Sources
-- List all sources used with URLs`
+Be direct. No filler. No "here's what I found" preamble.`
 }
 
 function buildDraftEmailPrompt(email: EmailMessage): string {
-  return `You are a research assistant helping draft a reply to an email.
+  return `Draft a reply to this email. Research the sender and topics first, then write ONLY the email reply — nothing else.
 
-## Original Email
-- **From:** ${email.from}
-- **Subject:** ${email.subject}
-- **Date:** ${email.date}
-- **Body:**
+From: ${email.from}
+Subject: ${email.subject}
+Body:
 ${email.body}
 
-## Your Task
-Research the sender, their company, and the topics mentioned in the email. Then draft a professional, informed reply. Use the linkupSearch tool to gather context.
-
-Your output MUST follow this exact structure:
-
-# Draft Reply: Re: ${email.subject}
-
-## Research Summary
-Brief summary of what you learned about the sender and context.
-
-## Draft Email
-
-\`\`\`
-Subject: Re: ${email.subject}
-
-[Write a professional, well-informed reply here. Reference specific facts from your research to show you've done your homework. Be concise but thorough.]
-\`\`\`
-
-## Key Insights
-- Bullet points of important context that informed the reply
-- Things to be aware of before sending
-
-## Alternative Angles
-- 1-2 alternative approaches to consider for the reply
-
-## Sources
-- List all sources used with URLs`
+Rules:
+- Output ONLY the email body text, ready to send
+- Be professional, concise, and informed by your research
+- Reference 1-2 specific facts you discovered to show you've done your homework
+- Do NOT include subject line, headers, greetings analysis, or commentary
+- Start with an appropriate greeting and end with a sign-off
+- Keep it under 200 words`
 }
 
 // --- Agent runner ---
