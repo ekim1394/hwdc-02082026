@@ -14,6 +14,8 @@ export interface AppSettings {
   modelProvider: ModelProvider
   modelName: string
   ollamaBaseUrl: string
+  anthropicApiKey: string
+  openaiApiKey: string
 }
 
 // ---------------------------------------------------------------------------
@@ -28,7 +30,9 @@ const SETTINGS_PATH = path.join(
 const DEFAULT_SETTINGS: AppSettings = {
   modelProvider: 'anthropic',
   modelName: 'claude-haiku-4-5',
-  ollamaBaseUrl: 'http://localhost:11434/api'
+  ollamaBaseUrl: 'http://localhost:11434/api',
+  anthropicApiKey: '',
+  openaiApiKey: ''
 }
 
 function loadSettings(): AppSettings {
@@ -69,6 +73,14 @@ export function updateSettings(partial: Partial<AppSettings>): AppSettings {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getModelConfig(): any {
   const settings = loadSettings()
+
+  // Inject API keys into process.env so the AI SDK providers pick them up
+  if (settings.anthropicApiKey) {
+    process.env.ANTHROPIC_API_KEY = settings.anthropicApiKey
+  }
+  if (settings.openaiApiKey) {
+    process.env.OPENAI_API_KEY = settings.openaiApiKey
+  }
 
   switch (settings.modelProvider) {
     case 'openai':

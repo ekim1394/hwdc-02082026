@@ -104,15 +104,21 @@ const api = {
     modelProvider: 'anthropic' | 'openai' | 'ollama'
     modelName: string
     ollamaBaseUrl: string
+    anthropicApiKey: string
+    openaiApiKey: string
   }> => ipcRenderer.invoke('get-settings'),
   updateSettings: (partial: {
     modelProvider?: 'anthropic' | 'openai' | 'ollama'
     modelName?: string
     ollamaBaseUrl?: string
+    anthropicApiKey?: string
+    openaiApiKey?: string
   }): Promise<{
     modelProvider: 'anthropic' | 'openai' | 'ollama'
     modelName: string
     ollamaBaseUrl: string
+    anthropicApiKey: string
+    openaiApiKey: string
   }> => ipcRenderer.invoke('update-settings', partial),
   deleteAllData: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('delete-all-data')

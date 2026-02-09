@@ -27,6 +27,8 @@ export default function SettingsPage({
   const [provider, setProvider] = useState<ModelProvider>('anthropic')
   const [modelName, setModelName] = useState('claude-haiku-4-5')
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434/api')
+  const [anthropicApiKey, setAnthropicApiKey] = useState('')
+  const [openaiApiKey, setOpenaiApiKey] = useState('')
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -41,6 +43,8 @@ export default function SettingsPage({
       setProvider(s.modelProvider)
       setModelName(s.modelName)
       setOllamaUrl(s.ollamaBaseUrl)
+      setAnthropicApiKey(s.anthropicApiKey || '')
+      setOpenaiApiKey(s.openaiApiKey || '')
     })
   }, [])
 
@@ -62,12 +66,14 @@ export default function SettingsPage({
     await window.api.updateSettings({
       modelProvider: provider,
       modelName: modelName,
-      ollamaBaseUrl: ollamaUrl
+      ollamaBaseUrl: ollamaUrl,
+      anthropicApiKey: anthropicApiKey,
+      openaiApiKey: openaiApiKey
     })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
-  }, [provider, modelName, ollamaUrl])
+  }, [provider, modelName, ollamaUrl, anthropicApiKey, openaiApiKey])
 
   const handleDeleteAll = useCallback(async () => {
     setDeleting(true)
@@ -194,6 +200,30 @@ export default function SettingsPage({
                   }}
                   placeholder="http://localhost:11434/api"
                 />
+              </div>
+            )}
+
+            {(provider === 'anthropic' || provider === 'openai') && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="api-key">
+                  {provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} API Key
+                </label>
+                <input
+                  id="api-key"
+                  type="password"
+                  className="form-input"
+                  value={provider === 'anthropic' ? anthropicApiKey : openaiApiKey}
+                  onChange={(e) => {
+                    if (provider === 'anthropic') {
+                      setAnthropicApiKey(e.target.value)
+                    } else {
+                      setOpenaiApiKey(e.target.value)
+                    }
+                    setSaved(false)
+                  }}
+                  placeholder={`Enter your ${provider === 'anthropic' ? 'Anthropic' : 'OpenAI'} API key`}
+                />
+                <span className="form-hint">Stored locally. Overrides the .env file value.</span>
               </div>
             )}
 

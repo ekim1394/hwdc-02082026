@@ -138,15 +138,21 @@ interface Api {
     modelProvider: 'anthropic' | 'openai' | 'ollama'
     modelName: string
     ollamaBaseUrl: string
+    anthropicApiKey: string
+    openaiApiKey: string
   }>
   updateSettings: (partial: {
     modelProvider?: 'anthropic' | 'openai' | 'ollama'
     modelName?: string
     ollamaBaseUrl?: string
+    anthropicApiKey?: string
+    openaiApiKey?: string
   }) => Promise<{
     modelProvider: 'anthropic' | 'openai' | 'ollama'
     modelName: string
     ollamaBaseUrl: string
+    anthropicApiKey: string
+    openaiApiKey: string
   }>
   deleteAllData: () => Promise<{ success: boolean; error?: string }>
 }
