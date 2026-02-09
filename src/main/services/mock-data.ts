@@ -31,75 +31,77 @@ export interface ResearchInput {
 export const MOCK_EMAILS: EmailMessage[] = [
   {
     id: 'email-1',
-    from: 'sarah.chen@acmecorp.com',
+    from: 'partnerships@stripe.com',
     to: 'me@mycompany.com',
-    subject: 'Partnership Opportunity — AI-Powered Analytics Platform',
-    snippet: 'Hi, I wanted to reach out about a potential partnership between our companies...',
+    subject: 'Stripe Partner Program — AI Integration Opportunity',
+    snippet:
+      'We noticed your work with AI agents and want to discuss a potential integration with Stripe...',
     body: `Hi,
 
-I'm Sarah Chen, VP of Business Development at Acme Corp. I wanted to reach out about a potential partnership between our companies.
+I'm reaching out from the Stripe Partnerships team. We've been following the growth of AI-powered research tools and believe there's a compelling opportunity to integrate intelligent research capabilities into the Stripe ecosystem.
 
-We've been building an AI-powered analytics platform that helps enterprise customers make sense of their data at scale. We've seen your work in the research agent space and think there could be a strong synergy.
+Specifically, we're exploring how AI agents could help our enterprise merchants with:
 
-Specifically, we're looking for partners who can integrate deep web research capabilities into our platform. Our customers frequently need to cross-reference their internal data with external market intelligence, competitor analysis, and industry trends.
+1. Automated competitor pricing analysis
+2. Market expansion research for new geographies
+3. Regulatory compliance monitoring across jurisdictions
 
-Would you be open to a 30-minute introductory call next week to explore this further? I'd love to share more about our platform and learn about your technology.
+We'd love to set up a 30-minute call to discuss how your research agent technology could complement Stripe's platform. Our Head of AI Partnerships, who previously led product at Plaid, would join the call.
+
+Would next Tuesday or Wednesday work?
 
 Best regards,
-Sarah Chen
-VP Business Development, Acme Corp
-sarah.chen@acmecorp.com`,
+Stripe Partnerships Team
+partnerships@stripe.com`,
     date: '2026-02-08T14:30:00Z'
   },
   {
     id: 'email-2',
-    from: 'james.rodriguez@ventureflow.vc',
+    from: 'info@a]6z.com',
     to: 'me@mycompany.com',
-    subject: 'Series A Follow-Up — Due Diligence Questions',
-    snippet:
-      'Thank you for the great pitch yesterday. Our investment committee had a few questions...',
+    subject: 'a16z — Interested in Your AI Agent Platform',
+    snippet: 'Our team at Andreessen Horowitz has been tracking the AI agent space closely...',
     body: `Hi,
 
-Thank you for the excellent pitch yesterday. The team was genuinely impressed by your demo and the traction you've shown.
+I'm a partner at Andreessen Horowitz focused on AI infrastructure investments. We've been tracking the AI agent space closely and your approach to combining web research with structured output generation caught our attention.
 
-Our investment committee met this morning and we'd like to move forward with due diligence. Before our next session, we have a few questions:
+We recently published our "Big Ideas in Tech 2026" list and AI agents that can autonomously research and synthesize information is one of our top themes. Companies like Perplexity, Tavily, and Exa have shown strong traction, and we see room for differentiated approaches.
 
-1. Can you share your current MRR breakdown by customer segment?
-2. What does your competitive landscape look like, particularly against Perplexity and Tavily?
-3. We'd love to understand your unit economics — CAC, LTV, and payback period.
-4. Any pending IP or patent applications?
+A few questions we'd love to discuss:
+1. How does your agent architecture differ from retrieval-augmented generation (RAG)?
+2. What's your current usage and retention metrics?
+3. How are you thinking about the competitive moat as foundation models improve?
 
-We're looking at a $5-8M Series A round and would like to lead. Let's schedule a follow-up for early next week.
+Would you be open to a meeting at our Menlo Park office? We can also do a video call if that's easier.
 
-Best,
-James Rodriguez
-Partner, VentureFlow Capital`,
+Looking forward,
+a16z AI Infrastructure Team`,
     date: '2026-02-07T09:15:00Z'
   },
   {
     id: 'email-3',
-    from: 'priya.patel@techconf2026.io',
+    from: 'speakers@websummit.com',
     to: 'me@mycompany.com',
-    subject: 'Speaker Invitation — TechConf 2026 AI Summit',
-    snippet: 'We would love to invite you to speak at TechConf 2026...',
+    subject: 'Speaker Invitation — Web Summit 2026 AI Stage',
+    snippet: 'We would love to invite you to speak at Web Summit 2026 in Lisbon...',
     body: `Hello,
 
-I'm Priya Patel, Program Director for TechConf 2026. We're organizing our annual AI Summit taking place March 15-17 in San Francisco.
+I'm part of the programming team at Web Summit. We're assembling the speaker lineup for Web Summit 2026 taking place November 11-14 in Lisbon, Portugal.
 
-We've been following your work on research agents and would love to invite you as a keynote speaker. The session we have in mind is:
+We've been following your work on AI research agents and would love to invite you to speak on the AI Stage. The session we have in mind:
 
-Title: "The Future of AI-Powered Research: From Search to Synthesis"
-Format: 30-minute keynote + 15-minute Q&A
-Date: March 16, 2026 (Day 2, Morning Slot)
-Expected attendance: ~2,000
+Title: "Beyond Search: How AI Agents Are Redefining Knowledge Work"
+Format: 20-minute talk + 10-minute audience Q&A
+Date: November 12, 2026 (Day 2)
+Expected audience: ~5,000 on the AI Stage
 
-We cover travel, accommodation, and offer a $5,000 speaker honorarium. Past speakers include leaders from OpenAI, Anthropic, Google DeepMind, and Microsoft Research.
+Web Summit has grown to 70,000+ attendees from 160+ countries. Past AI Stage speakers include Sam Altman (OpenAI), Dario Amodei (Anthropic), and Demis Hassabis (Google DeepMind).
 
-Could you let us know if you're interested? We'd need to confirm by February 20th.
+We cover flights, accommodation, and a full conference pass. Please let us know if you're interested by March 15th.
 
-Warm regards,
-Priya Patel
-Program Director, TechConf 2026`,
+Best,
+Web Summit Programming Team
+speakers@websummit.com`,
     date: '2026-02-06T16:45:00Z'
   }
 ]
@@ -107,48 +109,51 @@ Program Director, TechConf 2026`,
 export const MOCK_EVENTS: CalendarEvent[] = [
   {
     id: 'event-1',
-    summary: 'Product Strategy Review with Acme Corp',
+    summary: 'Partnership Discussion with Vercel',
     description:
-      'Discuss potential integration of our research agent into Acme Corp analytics platform. Review technical requirements and partnership terms.',
+      'Discuss potential integration of our research agent as a Vercel AI SDK template. Review the v0 platform and explore co-marketing opportunities for AI-powered apps built on Next.js.',
     start: '2026-02-12T10:00:00Z',
     end: '2026-02-12T11:00:00Z',
     attendees: [
-      { name: 'Sarah Chen', email: 'sarah.chen@acmecorp.com', company: 'Acme Corp' },
-      { name: 'David Kim', email: 'david.kim@acmecorp.com', company: 'Acme Corp' },
+      { name: 'Guillermo Rauch', email: 'guillermo@vercel.com', company: 'Vercel' },
+      { name: 'Jared Palmer', email: 'jared@vercel.com', company: 'Vercel' },
       { name: 'Me', email: 'me@mycompany.com' }
     ],
     location: 'Zoom'
   },
   {
     id: 'event-2',
-    summary: 'Series A Due Diligence — VentureFlow Capital',
+    summary: 'Investor Meeting — Sequoia Capital',
     description:
-      'Follow-up meeting with VentureFlow Capital investment team. Prepare MRR breakdown, competitive analysis, and unit economics for discussion.',
+      'First meeting with Sequoia Capital to discuss seed/Series A funding. Prepare product demo, traction metrics, and competitive positioning against Perplexity AI and Tavily.',
     start: '2026-02-13T14:00:00Z',
     end: '2026-02-13T15:30:00Z',
     attendees: [
       {
-        name: 'James Rodriguez',
-        email: 'james.rodriguez@ventureflow.vc',
-        company: 'VentureFlow Capital'
+        name: 'Pat Grady',
+        email: 'pat@sequoiacap.com',
+        company: 'Sequoia Capital'
       },
-      { name: 'Lisa Wang', email: 'lisa.wang@ventureflow.vc', company: 'VentureFlow Capital' },
-      { name: 'Me', email: 'me@mycompany.com' },
-      { name: 'Alex Turner', email: 'alex@mycompany.com' }
+      {
+        name: 'Sonya Huang',
+        email: 'sonya@sequoiacap.com',
+        company: 'Sequoia Capital'
+      },
+      { name: 'Me', email: 'me@mycompany.com' }
     ],
-    location: 'VentureFlow Office — 123 Sand Hill Rd, Menlo Park'
+    location: 'Sequoia Capital — 2800 Sand Hill Rd, Menlo Park, CA'
   },
   {
     id: 'event-3',
-    summary: 'Weekly Engineering Sync',
+    summary: 'Technical Deep Dive with Anthropic',
     description:
-      'Review sprint progress, discuss blockers, and plan next week priorities. Demo new Linkup integration.',
-    start: '2026-02-10T09:00:00Z',
-    end: '2026-02-10T09:45:00Z',
+      'Technical discussion with the Anthropic developer relations team about optimizing Claude tool-use patterns for multi-step research agents. Review prompt engineering best practices and discuss early access to new API features.',
+    start: '2026-02-14T11:00:00Z',
+    end: '2026-02-14T12:00:00Z',
     attendees: [
-      { name: 'Me', email: 'me@mycompany.com' },
-      { name: 'Jordan Lee', email: 'jordan@mycompany.com' },
-      { name: 'Sam Nakamura', email: 'sam@mycompany.com' }
+      { name: 'Alex Albert', email: 'alex@anthropic.com', company: 'Anthropic' },
+      { name: 'Amanda Askell', email: 'amanda@anthropic.com', company: 'Anthropic' },
+      { name: 'Me', email: 'me@mycompany.com' }
     ],
     location: 'Google Meet'
   }
