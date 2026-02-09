@@ -120,6 +120,23 @@ interface Api {
     threadId?: string,
     messageId?: string
   ) => Promise<{ success: boolean; messageId?: string; error?: string }>
+
+  // Settings
+  getSettings: () => Promise<{
+    modelProvider: 'anthropic' | 'openai' | 'ollama'
+    modelName: string
+    ollamaBaseUrl: string
+  }>
+  updateSettings: (partial: {
+    modelProvider?: 'anthropic' | 'openai' | 'ollama'
+    modelName?: string
+    ollamaBaseUrl?: string
+  }) => Promise<{
+    modelProvider: 'anthropic' | 'openai' | 'ollama'
+    modelName: string
+    ollamaBaseUrl: string
+  }>
+  deleteAllData: () => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

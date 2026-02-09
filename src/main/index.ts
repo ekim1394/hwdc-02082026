@@ -13,6 +13,7 @@ import { authenticate, getAuthStatus, signOut } from './services/google-auth'
 import { getGmailEmails, getGmailThread, sendGmailReply } from './services/gmail-service'
 import { getCalendarEvents } from './services/calendar-service'
 import * as db from './services/database'
+import * as settingsStore from './services/settings-store'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './services/mock-data'
 
 // Load environment variables
@@ -239,6 +240,7 @@ function registerIpcHandlers(): void {
       const result = await runInsightsAgent(input)
       return { success: true, data: result }
     } catch (error) {
+      console.error('❌ Insights agent error:', error)
       const message = error instanceof Error ? error.message : String(error)
       return { success: false, error: message }
     }
@@ -267,6 +269,27 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('get-action-log', (_event, sourceType: string, sourceId: string) => {
     return db.getActionLog(sourceType as 'email-reply' | 'transcript', sourceId)
+  })
+
+  // --- Settings handlers ---
+
+  ipcMain.handle('get-settings', () => {
+    return settingsStore.getSettings()
+  })
+
+  ipcMain.handle('update-settings', (_event, partial: Partial<settingsStore.AppSettings>) => {
+    return settingsStore.updateSettings(partial)
+  })
+
+  ipcMain.handle('delete-all-data', () => {
+    try {
+      db.deleteAllData()
+      signOut()
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { success: false, error: message }
+    }
   })
 }
 

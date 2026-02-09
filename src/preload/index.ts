@@ -85,7 +85,25 @@ const api = {
     threadId?: string,
     messageId?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> =>
-    ipcRenderer.invoke('send-email-reply', to, subject, body, threadId, messageId)
+    ipcRenderer.invoke('send-email-reply', to, subject, body, threadId, messageId),
+
+  // Settings
+  getSettings: (): Promise<{
+    modelProvider: 'anthropic' | 'openai' | 'ollama'
+    modelName: string
+    ollamaBaseUrl: string
+  }> => ipcRenderer.invoke('get-settings'),
+  updateSettings: (partial: {
+    modelProvider?: 'anthropic' | 'openai' | 'ollama'
+    modelName?: string
+    ollamaBaseUrl?: string
+  }): Promise<{
+    modelProvider: 'anthropic' | 'openai' | 'ollama'
+    modelName: string
+    ollamaBaseUrl: string
+  }> => ipcRenderer.invoke('update-settings', partial),
+  deleteAllData: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('delete-all-data')
 }
 
 if (process.contextIsolated) {

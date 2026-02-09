@@ -3,8 +3,9 @@ import SourcePicker from './components/SourcePicker'
 import SourceDetail from './components/SourceDetail'
 import ResearchOutput from './components/ResearchOutput'
 import InsightsPage from './components/InsightsPage'
+import SettingsPage from './components/SettingsPage'
 
-type PageView = 'research' | 'insights'
+type PageView = 'research' | 'insights' | 'settings'
 
 function App(): React.JSX.Element {
   const [activePage, setActivePage] = useState<PageView>('research')
@@ -171,6 +172,13 @@ function App(): React.JSX.Element {
           <span className="page-nav-icon">🔎</span>
           Insights Agent
         </button>
+        <button
+          className={`page-nav-tab ${activePage === 'settings' ? 'active' : ''}`}
+          onClick={() => setActivePage('settings')}
+        >
+          <span className="page-nav-icon">⚙️</span>
+          Settings
+        </button>
       </nav>
 
       {activePage === 'research' ? (
@@ -268,7 +276,7 @@ function App(): React.JSX.Element {
             </div>
           </main>
         </>
-      ) : (
+      ) : activePage === 'insights' ? (
         /* ---- Insights Agent Page ---- */
         <>
           <header className="app-header">
@@ -279,6 +287,25 @@ function App(): React.JSX.Element {
           </header>
           <main className="app-main">
             <InsightsPage />
+          </main>
+        </>
+      ) : (
+        /* ---- Settings Page ---- */
+        <>
+          <header className="app-header">
+            <div className="app-logo">
+              <span className="logo-icon">⚙️</span>
+              <h1>Settings</h1>
+            </div>
+          </header>
+          <main className="app-main">
+            <SettingsPage
+              googleAuth={googleAuth}
+              authLoading={authLoading}
+              authUrl={authUrl}
+              onGoogleConnect={handleGoogleConnect}
+              onGoogleDisconnect={handleGoogleDisconnect}
+            />
           </main>
         </>
       )}

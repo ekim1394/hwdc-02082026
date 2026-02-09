@@ -1,5 +1,4 @@
-import { generateText, type Tool } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
+import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import type {
   InsightsInput,
@@ -8,6 +7,7 @@ import type {
   InsightsInputType
 } from './insights-mock-data'
 import * as db from './database'
+import { getModelConfig } from './settings-store'
 
 // --- Action step types ---
 
@@ -42,15 +42,6 @@ const insightsSchema = z.object({
     .describe('2-3 concrete next action steps')
 })
 
-type InsightsSchema = z.infer<typeof insightsSchema>
-
-const extractInsightsTool: Tool<InsightsSchema, InsightsSchema> = {
-  description:
-    'Extract structured insights from the analysis. Call this tool with the final structured result.',
-  inputSchema: insightsSchema,
-  execute: async (input: InsightsSchema): Promise<InsightsSchema> => input
-}
-
 // --- Prompt builders ---
 
 function buildEmailReplyPrompt(reply: ExternalEmailReply): string {
@@ -67,8 +58,7 @@ Instructions:
 - Extract 3-5 key insights (the most important takeaways)
 - Identify 2-4 feedback points (sentiment, concerns, objections, positive signals, deadlines)
 - Suggest 2-3 concrete next action steps, each as either a follow-up email or a meeting to schedule
-- Be specific and actionable — don't give generic advice
-- Use the extractInsights tool to return your structured analysis`
+- Be specific and actionable — don't give generic advice`
 }
 
 function buildTranscriptPrompt(transcript: MeetingTranscript): string {
@@ -91,8 +81,7 @@ Instructions:
 - Extract 3-5 key insights (the most important takeaways and decisions)
 - Identify 2-4 feedback points (concerns raised, pushback, agreements, sentiment)
 - Suggest 2-3 concrete next action steps, each as either a follow-up email or a meeting to schedule
-- Be specific — reference actual discussion points and names from the transcript
-- Use the extractInsights tool to return your structured analysis`
+- Be specific — reference actual discussion points and names from the transcript`
 }
 
 // --- Agent runner ---
@@ -125,26 +114,25 @@ export async function runInsightsAgent(input: InsightsInput): Promise<InsightsRe
   console.log('='.repeat(60))
 
   const result = await generateText({
-    model: anthropic('claude-haiku-4-5'),
-    tools: { extractInsights: extractInsightsTool },
-    toolChoice: { type: 'tool', toolName: 'extractInsights' },
-    system:
-      'You are an expert business analyst. Analyze the provided communication and extract structured insights. Always use the extractInsights tool to return your analysis in the required format.',
-    prompt
+    model: getModelConfig(),
+    system: 'Analyze the provided communication and extract structured insights.',
+    prompt,
+    output: Output.object({
+      schema: insightsSchema
+    })
   })
 
-  // Extract the tool call result
-  let insightsData: InsightsSchema | null = null
-  for (const step of result.steps) {
-    for (const tc of step.toolCalls) {
-      if (tc.toolName === 'extractInsights') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        insightsData = (tc as any).args as InsightsSchema
-      }
-    }
-  }
+  const insightsData = result.output
+  console.log(insightsData)
 
   if (!insightsData) {
+    console.error(
+      '❌ Insights extraction failed. Result structure:',
+      JSON.stringify({
+        finishReason: result.finishReason,
+        textLength: result.text?.length
+      })
+    )
     throw new Error('Insights agent did not produce structured output')
   }
 

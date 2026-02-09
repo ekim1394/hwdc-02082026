@@ -1,9 +1,9 @@
 import { generateText, stepCountIs, type Tool } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
 import { LinkupClient } from 'linkup-sdk'
 import { z } from 'zod'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './mock-data'
 import * as db from './database'
+import { getModelConfig } from './settings-store'
 
 // Initialize Linkup client
 const linkup = new LinkupClient({ apiKey: '6bb8e0c3-3011-4ea9-a8ef-d72fe2be697d' })
@@ -156,7 +156,7 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
   console.log('='.repeat(60))
 
   const result = await generateText({
-    model: anthropic('claude-haiku-4-5'),
+    model: getModelConfig(),
     tools: { linkupSearch: linkupSearchTool },
     stopWhen: stepCountIs(10),
     system:

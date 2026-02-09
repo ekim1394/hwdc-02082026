@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.39",
+    "@ai-sdk/openai": "^3.0.26",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@tailwindcss/vite": "^4.1.18",
@@ -30,6 +31,7 @@
     "dotenv": "^17.2.4",
     "googleapis": "^171.4.0",
     "linkup-sdk": "^2.6.2",
+    "ollama-ai-provider": "^1.2.0",
     "tailwindcss": "^4.1.18",
     "zod": "^4.3.6"
   },

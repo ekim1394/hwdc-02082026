@@ -499,3 +499,19 @@ export function getActionLog(
     executedAt: r.executed_at
   }))
 }
+
+// ---------------------------------------------------------------------------
+// Delete all data
+// ---------------------------------------------------------------------------
+
+export function deleteAllData(): void {
+  const d = getDb()
+  d.exec(`
+    DELETE FROM emails;
+    DELETE FROM events;
+    DELETE FROM research_results;
+    DELETE FROM insights_results;
+    DELETE FROM insights_action_log;
+  `)
+  console.log('🗑️ All data deleted from database')
+}
