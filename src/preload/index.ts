@@ -14,7 +14,12 @@ const api = {
   getEmails: (): Promise<unknown[]> => ipcRenderer.invoke('get-emails'),
   getEvents: (): Promise<unknown[]> => ipcRenderer.invoke('get-events'),
   runResearch: (input: { type: string; data: unknown }): Promise<ResearchApiResult> =>
-    ipcRenderer.invoke('run-research', input)
+    ipcRenderer.invoke('run-research', input),
+  googleAuth: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('google-auth'),
+  googleAuthStatus: (): Promise<{ authenticated: boolean }> =>
+    ipcRenderer.invoke('google-auth-status'),
+  googleSignOut: (): Promise<{ success: boolean }> => ipcRenderer.invoke('google-sign-out')
 }
 
 if (process.contextIsolated) {

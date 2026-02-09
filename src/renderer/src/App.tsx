@@ -11,6 +11,34 @@ function App(): React.JSX.Element {
   const [inputType, setInputType] = useState<'email' | 'calendar' | null>(null)
   const [selectedData, setSelectedData] = useState<unknown | null>(null)
 
+  // Google auth state
+  const [googleAuth, setGoogleAuth] = useState(false)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authKey, setAuthKey] = useState(0) // bump to force SourcePicker re-fetch
+
+  useEffect(() => {
+    window.api.googleAuthStatus().then((res) => setGoogleAuth(res.authenticated))
+  }, [])
+
+  const handleGoogleConnect = useCallback(async () => {
+    setAuthLoading(true)
+    try {
+      const result = await window.api.googleAuth()
+      if (result.success) {
+        setGoogleAuth(true)
+        setAuthKey((k) => k + 1) // force re-fetch
+      }
+    } finally {
+      setAuthLoading(false)
+    }
+  }, [])
+
+  const handleGoogleDisconnect = useCallback(async () => {
+    await window.api.googleSignOut()
+    setGoogleAuth(false)
+    setAuthKey((k) => k + 1) // force re-fetch with mock data
+  }, [])
+
   // --- Resizable split ---
   const [splitPercent, setSplitPercent] = useState(40)
   const isDragging = useRef(false)
@@ -79,13 +107,29 @@ function App(): React.JSX.Element {
           <span className="logo-icon">🧠</span>
           <h1>Research Agent</h1>
         </div>
-        <p className="app-subtitle">
-          Powered by <strong>Linkup</strong> + <strong>Vercel AI SDK</strong>
-        </p>
+        <div className="header-right">
+          <div className={`auth-status ${googleAuth ? 'connected' : ''}`}>
+            <span className="auth-dot" />
+            {googleAuth ? 'Google Connected' : 'Using Mock Data'}
+          </div>
+          {googleAuth ? (
+            <button className="auth-btn disconnect" onClick={handleGoogleDisconnect}>
+              Disconnect
+            </button>
+          ) : (
+            <button
+              className="auth-btn connect"
+              onClick={handleGoogleConnect}
+              disabled={authLoading}
+            >
+              {authLoading ? '⏳ Connecting...' : '🔗 Connect Google'}
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="app-main">
-        <SourcePicker onSelect={handleSelect} disabled={loading} />
+        <SourcePicker key={authKey} onSelect={handleSelect} disabled={loading} />
         <div ref={contentRef} className={`content-area ${hasSelection ? 'has-selection' : ''}`}>
           {hasSelection ? (
             <>

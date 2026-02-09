@@ -33,6 +33,9 @@ interface Api {
     }[]
   >
   runResearch: (input: { type: string; data: unknown }) => Promise<ResearchApiResult>
+  googleAuth: () => Promise<{ success: boolean; error?: string }>
+  googleAuthStatus: () => Promise<{ authenticated: boolean }>
+  googleSignOut: () => Promise<{ success: boolean }>
 }
 
 declare global {
