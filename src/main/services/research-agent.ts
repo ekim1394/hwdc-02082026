@@ -172,7 +172,7 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
   console.log('='.repeat(60))
 
   const result = await generateText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: anthropic('claude-haiku-4-5'),
     tools: { linkupSearch: linkupSearchTool },
     stopWhen: stepCountIs(10),
     system:

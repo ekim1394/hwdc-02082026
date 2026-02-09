@@ -441,12 +441,12 @@
 }
 
 .output-content {
-  line-height: 1.7;
-  font-size: 14px;
+  line-height: 1.75;
+  font-size: 16px;
 }
 
 .output-content h1 {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   margin: 28px 0 14px;
   background: linear-gradient(135deg, var(--ev-c-text-1), var(--accent-light));
@@ -460,14 +460,14 @@
 }
 
 .output-content h2 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
   margin: 24px 0 10px;
   color: var(--accent-light);
 }
 
 .output-content h3 {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   margin: 18px 0 8px;
   color: var(--ev-c-text-1);
@@ -525,7 +525,7 @@
 
 .output-content code {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .output-content pre code {
