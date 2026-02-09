@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Email {
   id: string
@@ -26,12 +26,6 @@ interface SourcePickerProps {
   disabled: boolean
 }
 
-interface ThreadGroup {
-  threadId: string
-  emails: Email[]
-  representative: Email
-}
-
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
     month: 'short',
@@ -41,65 +35,17 @@ function formatDate(dateStr: string): string {
   })
 }
 
-/** Strip Re:/Fwd:/FW: prefixes and normalize whitespace for grouping. */
-function normalizeSubject(subject: string): string {
-  return subject
-    .replace(/^(re|fwd|fw)\s*:\s*/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()
-}
-
-/** Group emails by threadId, then merge groups with the same normalized subject. */
-function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
-  // Step 1: group by threadId (or email id if no threadId)
-  const threadMap = new Map<string, Email[]>()
-  for (const email of emails) {
-    const key = email.threadId || email.id
-    const group = threadMap.get(key)
-    if (group) {
-      group.push(email)
-    } else {
-      threadMap.set(key, [email])
-    }
-  }
-
-  // Step 2: merge thread groups that share the same normalized subject
-  const subjectMap = new Map<string, Email[]>()
-  for (const threadEmails of threadMap.values()) {
-    // Use the first email's subject as the group key
-    const normSubject = normalizeSubject(threadEmails[0].subject)
-    const existing = subjectMap.get(normSubject)
-    if (existing) {
-      existing.push(...threadEmails)
-    } else {
-      subjectMap.set(normSubject, [...threadEmails])
-    }
-  }
-
-  // Step 3: build final groups sorted newest-first
-  const groups: ThreadGroup[] = []
-  for (const [, groupEmails] of subjectMap) {
-    groupEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    const threadId = groupEmails[0].threadId || groupEmails[0].id
-    groups.push({ threadId, emails: groupEmails, representative: groupEmails[0] })
-  }
-
-  groups.sort(
-    (a, b) => new Date(b.representative.date).getTime() - new Date(a.representative.date).getTime()
-  )
-  return groups
-}
-
 export default function SourcePicker({ onSelect, disabled }: SourcePickerProps): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'email' | 'calendar'>('email')
   const [emails, setEmails] = useState<Email[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [statuses, setStatuses] = useState<Record<string, 'pending' | 'done'>>({})
-  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set())
 
-  const threadGroups = useMemo(() => groupEmailsByThread(emails), [emails])
+  // Thread expansion: maps an email id → fetched thread messages (excluding the clicked email)
+  const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null)
+  const [threadMessages, setThreadMessages] = useState<Email[]>([])
+  const [threadLoading, setThreadLoading] = useState(false)
 
   // Fetch data + statuses
   useEffect(() => {
@@ -133,44 +79,37 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
     return statuses[key] || 'new'
   }
 
-  const toggleThread = (threadId: string): void => {
-    setExpandedThreads((prev) => {
-      const next = new Set(prev)
-      if (next.has(threadId)) {
-        next.delete(threadId)
-      } else {
-        next.add(threadId)
-      }
-      return next
-    })
-  }
+  const handleEmailClick = async (email: Email): Promise<void> => {
+    handleSelect('email', email)
 
-  const renderEmailItem = (email: Email, isChild = false): React.JSX.Element => {
-    const status = getStatus('email', email.id)
-    return (
-      <button
-        key={email.id}
-        className={`picker-item ${isChild ? 'thread-child' : ''} ${selectedId === email.id ? 'selected' : ''}`}
-        onClick={() => handleSelect('email', email)}
-        disabled={disabled}
-      >
-        {!isChild && <div className="item-badge email-badge">Email</div>}
-        <div className="item-content">
-          <div className="item-title">
-            {isChild ? email.from.split('<')[0].trim() || email.from : email.subject}
-            {status === 'done' && <span className="status-dot done" title="Research ready" />}
-            {status === 'pending' && (
-              <span className="status-dot processing" title="Processing..." />
-            )}
-          </div>
-          <div className="item-meta">
-            {!isChild && <span className="item-from">{email.from}</span>}
-            <span className="item-date">{formatDate(email.date)}</span>
-          </div>
-          <div className="item-snippet">{email.snippet}</div>
-        </div>
-      </button>
-    )
+    // Toggle thread expansion
+    if (expandedEmailId === email.id) {
+      // Collapse if already expanded
+      setExpandedEmailId(null)
+      setThreadMessages([])
+      return
+    }
+
+    // If the email has a threadId, fetch the thread
+    if (email.threadId) {
+      setExpandedEmailId(email.id)
+      setThreadLoading(true)
+      try {
+        const thread = (await window.api.getEmailThread(email.threadId)) as Email[]
+        // Filter out the clicked email and sort oldest-first for conversation order
+        const others = thread
+          .filter((m) => m.id !== email.id)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        setThreadMessages(others)
+      } catch {
+        setThreadMessages([])
+      } finally {
+        setThreadLoading(false)
+      }
+    } else {
+      setExpandedEmailId(null)
+      setThreadMessages([])
+    }
   }
 
   return (
@@ -199,46 +138,75 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
 
       <div className="picker-list">
         {activeTab === 'email' &&
-          threadGroups.map((group) => {
-            // Single-email thread — render as before
-            if (group.emails.length === 1) {
-              return renderEmailItem(group.representative)
-            }
+          emails.map((email) => {
+            const status = getStatus('email', email.id)
+            const isExpanded = expandedEmailId === email.id
+            const hasThread = !!email.threadId
 
-            // Multi-email thread — collapsible group
-            const isExpanded = expandedThreads.has(group.threadId)
-            const rep = group.representative
-            const anySelected = group.emails.some((e) => e.id === selectedId)
             return (
               <div
-                key={group.threadId}
-                className={`thread-group ${anySelected ? 'thread-group-active' : ''}`}
+                key={email.id}
+                className={`thread-group ${isExpanded ? 'thread-group-active' : ''}`}
               >
                 <button
-                  className={`thread-header ${anySelected ? 'selected' : ''}`}
-                  onClick={() => {
-                    toggleThread(group.threadId)
-                    handleSelect('email', rep)
-                  }}
+                  className={`picker-item ${selectedId === email.id ? 'selected' : ''}`}
+                  onClick={() => handleEmailClick(email)}
                   disabled={disabled}
                 >
                   <div className="item-badge email-badge">Email</div>
                   <div className="item-content">
                     <div className="item-title">
-                      {rep.subject}
-                      <span className="thread-count">{group.emails.length}</span>
+                      {email.subject}
+                      {status === 'done' && (
+                        <span className="status-dot done" title="Research ready" />
+                      )}
+                      {status === 'pending' && (
+                        <span className="status-dot processing" title="Processing..." />
+                      )}
                     </div>
                     <div className="item-meta">
-                      <span className="item-from">{rep.from}</span>
-                      <span className="item-date">{formatDate(rep.date)}</span>
+                      <span className="item-from">{email.from}</span>
+                      <span className="item-date">{formatDate(email.date)}</span>
                     </div>
-                    <div className="item-snippet">{rep.snippet}</div>
+                    <div className="item-snippet">{email.snippet}</div>
                   </div>
-                  <span className={`thread-chevron ${isExpanded ? 'expanded' : ''}`}>›</span>
+                  {hasThread && (
+                    <span className={`thread-chevron ${isExpanded ? 'expanded' : ''}`}>›</span>
+                  )}
                 </button>
-                {isExpanded && (
+
+                {isExpanded && threadLoading && (
                   <div className="thread-children">
-                    {group.emails.map((email) => renderEmailItem(email, true))}
+                    <div className="thread-loading">Loading thread…</div>
+                  </div>
+                )}
+
+                {isExpanded && !threadLoading && threadMessages.length > 0 && (
+                  <div className="thread-children">
+                    {threadMessages.map((msg) => (
+                      <button
+                        key={msg.id}
+                        className={`picker-item thread-child ${selectedId === msg.id ? 'selected' : ''}`}
+                        onClick={() => handleSelect('email', msg)}
+                        disabled={disabled}
+                      >
+                        <div className="item-content">
+                          <div className="item-title">
+                            {msg.from.split('<')[0].trim() || msg.from}
+                          </div>
+                          <div className="item-meta">
+                            <span className="item-date">{formatDate(msg.date)}</span>
+                          </div>
+                          <div className="item-snippet">{msg.snippet}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {isExpanded && !threadLoading && threadMessages.length === 0 && (
+                  <div className="thread-children">
+                    <div className="thread-loading">No other messages in thread</div>
                   </div>
                 )}
               </div>

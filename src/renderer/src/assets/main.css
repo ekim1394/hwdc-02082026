@@ -646,6 +646,13 @@ button {
   font-size: 12px;
 }
 
+.thread-loading {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ev-c-text-3);
+  font-style: italic;
+}
+
 /* Processing status dots */
 
 .status-dot {
