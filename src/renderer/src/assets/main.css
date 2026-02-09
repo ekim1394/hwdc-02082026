@@ -82,6 +82,7 @@
 
 .content-top {
   overflow-y: auto;
+  overflow-x: hidden;
   border-bottom: none;
 }
 
@@ -137,6 +138,9 @@
 
 .source-detail {
   padding: 20px 24px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .detail-header {
@@ -198,8 +202,6 @@
   line-height: 1.6;
   color: var(--ev-c-text-2);
   white-space: pre-wrap;
-  max-height: 160px;
-  overflow-y: auto;
   padding: 12px 14px;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--border);
