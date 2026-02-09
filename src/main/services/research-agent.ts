@@ -34,12 +34,16 @@ const linkupSearchTool: Tool<SearchInput, SearchOutput> = {
     'Search the web for information using Linkup. Use this to research people, companies, topics, competitors, or any external context relevant to the task.',
   inputSchema: searchInputSchema,
   execute: async (input: SearchInput): Promise<SearchOutput> => {
+    console.log(`   [Linkup] Searching: "${input.query}" (depth: ${input.depth})`)
     try {
       const result = await linkup.search({
         query: input.query,
         depth: input.depth,
         outputType: 'sourcedAnswer'
       })
+      console.log(
+        `   [Linkup] ✓ Got answer (${result.answer.length} chars, ${result.sources.length} sources)`
+      )
       return {
         answer: result.answer,
         sources: result.sources.map((s) => ({
@@ -48,10 +52,17 @@ const linkupSearchTool: Tool<SearchInput, SearchOutput> = {
         }))
       }
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error)
+      console.error(`   [Linkup] ✗ Search failed:`, errMsg)
+      if (error instanceof Error && error.stack) {
+        console.error(`   [Linkup] Stack:`, error.stack)
+      }
+      // Log the full error object for API errors
+      console.error(`   [Linkup] Full error:`, JSON.stringify(error, null, 2))
       return {
         answer: '',
         sources: [],
-        error: `Search failed: ${error instanceof Error ? error.message : String(error)}`
+        error: `Search failed: ${errMsg}`
       }
     }
   }
