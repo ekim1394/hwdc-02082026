@@ -359,17 +359,19 @@ button {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: transparent;
+  background: var(--ev-c-black-soft);
   color: var(--ev-c-text-1);
   cursor: pointer;
   transition: all var(--transition);
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  overflow: hidden;
+  position: relative;
 }
 
 .picker-item:hover:not(:disabled) {
-  background: var(--surface-hover);
+  background: var(--ev-c-black-mute);
   border-color: rgba(255, 255, 255, 0.12);
   transform: translateY(-1px);
 }
