@@ -1,5 +1,5 @@
 import { generateText, stepCountIs, type Tool } from 'ai'
-import { openai } from '@ai-sdk/openai'
+import { anthropic } from '@ai-sdk/anthropic'
 import { LinkupClient } from 'linkup-sdk'
 import { z } from 'zod'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './mock-data'
@@ -163,7 +163,7 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
   const toolCallLog: { tool: string; query: string }[] = []
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: anthropic('claude-sonnet-4-20250514'),
     tools: { linkupSearch: linkupSearchTool },
     stopWhen: stepCountIs(10),
     system:
