@@ -21,10 +21,13 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.26",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "ai": "^6.0.77",
-    "linkup-sdk": "^2.6.2"
+    "dotenv": "^17.2.4",
+    "linkup-sdk": "^2.6.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

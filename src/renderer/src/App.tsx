@@ -1,34 +1,59 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { useState, useCallback } from 'react'
+import SourcePicker from './components/SourcePicker'
+import ResearchOutput from './components/ResearchOutput'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const [output, setOutput] = useState<string | null>(null)
+  const [toolCalls, setToolCalls] = useState<{ tool: string; query: string }[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [inputType, setInputType] = useState<'email' | 'calendar' | null>(null)
+
+  const handleSelect = useCallback(async (type: 'email' | 'calendar', data: unknown) => {
+    setInputType(type)
+    setOutput(null)
+    setToolCalls([])
+    setError(null)
+    setLoading(true)
+
+    try {
+      const result = await window.api.runResearch({ type, data })
+      if (result.success && result.data) {
+        setOutput(result.data.output)
+        setToolCalls(result.data.toolCalls)
+      } else {
+        setError(result.error ?? 'Unknown error occurred')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to run research agent')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
+    <div className="app">
+      <header className="app-header">
+        <div className="app-logo">
+          <span className="logo-icon">🧠</span>
+          <h1>Research Agent</h1>
         </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+        <p className="app-subtitle">
+          Powered by <strong>Linkup</strong> + <strong>Vercel AI SDK</strong>
+        </p>
+      </header>
+
+      <main className="app-main">
+        <SourcePicker onSelect={handleSelect} disabled={loading} />
+        <ResearchOutput
+          output={output}
+          toolCalls={toolCalls}
+          loading={loading}
+          error={error}
+          inputType={inputType}
+        />
+      </main>
+    </div>
   )
 }
 

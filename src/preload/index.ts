@@ -1,12 +1,22 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
+export interface ResearchApiResult {
+  success: boolean
+  data?: {
+    output: string
+    toolCalls: { tool: string; query: string }[]
+  }
+  error?: string
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+const api = {
+  getEmails: (): Promise<unknown[]> => ipcRenderer.invoke('get-emails'),
+  getEvents: (): Promise<unknown[]> => ipcRenderer.invoke('get-events'),
+  runResearch: (input: { type: string; data: unknown }): Promise<ResearchApiResult> =>
+    ipcRenderer.invoke('run-research', input)
+}
+
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
