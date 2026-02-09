@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 
 interface Email {
   id: string
@@ -8,6 +8,7 @@ interface Email {
   snippet: string
   body: string
   date: string
+  threadId?: string
 }
 
 interface CalendarEvent {
@@ -25,6 +26,12 @@ interface SourcePickerProps {
   disabled: boolean
 }
 
+interface ThreadGroup {
+  threadId: string
+  emails: Email[]
+  representative: Email
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
     month: 'short',
@@ -34,12 +41,42 @@ function formatDate(dateStr: string): string {
   })
 }
 
+/** Group emails by threadId. Single-thread emails stay standalone. */
+function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
+  const map = new Map<string, Email[]>()
+  for (const email of emails) {
+    const key = email.threadId || email.id
+    const group = map.get(key)
+    if (group) {
+      group.push(email)
+    } else {
+      map.set(key, [email])
+    }
+  }
+
+  const groups: ThreadGroup[] = []
+  for (const [threadId, threadEmails] of map) {
+    // Sort newest first within each thread
+    threadEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    groups.push({ threadId, emails: threadEmails, representative: threadEmails[0] })
+  }
+
+  // Sort groups by newest representative date
+  groups.sort(
+    (a, b) => new Date(b.representative.date).getTime() - new Date(a.representative.date).getTime()
+  )
+  return groups
+}
+
 export default function SourcePicker({ onSelect, disabled }: SourcePickerProps): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<'email' | 'calendar'>('email')
   const [emails, setEmails] = useState<Email[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [statuses, setStatuses] = useState<Record<string, 'pending' | 'done'>>({})
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set())
+
+  const threadGroups = useMemo(() => groupEmailsByThread(emails), [emails])
 
   // Fetch data + statuses
   useEffect(() => {
@@ -73,6 +110,46 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
     return statuses[key] || 'new'
   }
 
+  const toggleThread = (threadId: string): void => {
+    setExpandedThreads((prev) => {
+      const next = new Set(prev)
+      if (next.has(threadId)) {
+        next.delete(threadId)
+      } else {
+        next.add(threadId)
+      }
+      return next
+    })
+  }
+
+  const renderEmailItem = (email: Email, isChild = false): React.JSX.Element => {
+    const status = getStatus('email', email.id)
+    return (
+      <button
+        key={email.id}
+        className={`picker-item ${isChild ? 'thread-child' : ''} ${selectedId === email.id ? 'selected' : ''}`}
+        onClick={() => handleSelect('email', email)}
+        disabled={disabled}
+      >
+        {!isChild && <div className="item-badge email-badge">Email</div>}
+        <div className="item-content">
+          <div className="item-title">
+            {isChild ? email.from.split('<')[0].trim() || email.from : email.subject}
+            {status === 'done' && <span className="status-dot done" title="Research ready" />}
+            {status === 'pending' && (
+              <span className="status-dot processing" title="Processing..." />
+            )}
+          </div>
+          <div className="item-meta">
+            {!isChild && <span className="item-from">{email.from}</span>}
+            <span className="item-date">{formatDate(email.date)}</span>
+          </div>
+          <div className="item-snippet">{email.snippet}</div>
+        </div>
+      </button>
+    )
+  }
+
   return (
     <div className="source-picker">
       <div className="picker-header">
@@ -99,33 +176,49 @@ export default function SourcePicker({ onSelect, disabled }: SourcePickerProps):
 
       <div className="picker-list">
         {activeTab === 'email' &&
-          emails.map((email) => {
-            const status = getStatus('email', email.id)
+          threadGroups.map((group) => {
+            // Single-email thread — render as before
+            if (group.emails.length === 1) {
+              return renderEmailItem(group.representative)
+            }
+
+            // Multi-email thread — collapsible group
+            const isExpanded = expandedThreads.has(group.threadId)
+            const rep = group.representative
+            const anySelected = group.emails.some((e) => e.id === selectedId)
             return (
-              <button
-                key={email.id}
-                className={`picker-item ${selectedId === email.id ? 'selected' : ''}`}
-                onClick={() => handleSelect('email', email)}
-                disabled={disabled}
+              <div
+                key={group.threadId}
+                className={`thread-group ${anySelected ? 'thread-group-active' : ''}`}
               >
-                <div className="item-badge email-badge">Email</div>
-                <div className="item-content">
-                  <div className="item-title">
-                    {email.subject}
-                    {status === 'done' && (
-                      <span className="status-dot done" title="Research ready" />
-                    )}
-                    {status === 'pending' && (
-                      <span className="status-dot processing" title="Processing..." />
-                    )}
+                <button
+                  className={`thread-header ${anySelected ? 'selected' : ''}`}
+                  onClick={() => {
+                    toggleThread(group.threadId)
+                    handleSelect('email', rep)
+                  }}
+                  disabled={disabled}
+                >
+                  <div className="item-badge email-badge">Email</div>
+                  <div className="item-content">
+                    <div className="item-title">
+                      {rep.subject}
+                      <span className="thread-count">{group.emails.length}</span>
+                    </div>
+                    <div className="item-meta">
+                      <span className="item-from">{rep.from}</span>
+                      <span className="item-date">{formatDate(rep.date)}</span>
+                    </div>
+                    <div className="item-snippet">{rep.snippet}</div>
                   </div>
-                  <div className="item-meta">
-                    <span className="item-from">{email.from}</span>
-                    <span className="item-date">{formatDate(email.date)}</span>
+                  <span className={`thread-chevron ${isExpanded ? 'expanded' : ''}`}>›</span>
+                </button>
+                {isExpanded && (
+                  <div className="thread-children">
+                    {group.emails.map((email) => renderEmailItem(email, true))}
                   </div>
-                  <div className="item-snippet">{email.snippet}</div>
-                </div>
-              </button>
+                )}
+              </div>
             )
           })}
 

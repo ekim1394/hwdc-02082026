@@ -539,6 +539,113 @@ button {
   overflow: hidden;
 }
 
+/* --- Thread Groups --- */
+
+.thread-group {
+  border-radius: var(--radius);
+  border-left: 3px solid transparent;
+  transition: border-color var(--transition);
+}
+
+.thread-group-active {
+  border-left-color: var(--accent-light);
+}
+
+.thread-header {
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  border: 0 none transparent;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px var(--border);
+  background: var(--ev-c-black-soft);
+  color: var(--ev-c-text-1);
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  overflow: hidden;
+  position: relative;
+}
+
+.thread-header:hover:not(:disabled) {
+  background: var(--ev-c-black-mute);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.thread-header.selected {
+  background: var(--surface-active);
+  box-shadow:
+    inset 0 0 0 1px var(--border-active),
+    0 0 20px var(--accent-glow);
+}
+
+.thread-header:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.thread-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  box-shadow: 0 1px 4px var(--accent-glow);
+}
+
+.thread-chevron {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ev-c-text-3);
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.thread-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.thread-children {
+  padding: 4px 0 4px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fadeInUp 0.2s ease-out;
+}
+
+.thread-child {
+  padding: 10px 12px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+}
+
+.thread-child .item-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.thread-child .item-snippet {
+  -webkit-line-clamp: 1;
+}
+
+.thread-child .item-date {
+  font-size: 12px;
+}
+
 /* Processing status dots */
 
 .status-dot {
