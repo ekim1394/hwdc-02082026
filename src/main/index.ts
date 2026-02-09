@@ -6,10 +6,11 @@ import * as dotenv from 'dotenv'
 import { getEmails as getMockEmails, getEvents as getMockEvents } from './services/mock-data'
 import { runResearchAgent, processNewItems } from './services/research-agent'
 import { runInsightsAgent, executeAction } from './services/insights-agent'
-import { getExternalReplies, getMeetingTranscripts } from './services/insights-mock-data'
+import { getMeetingTranscripts } from './services/insights-mock-data'
+import { getExternalReplies } from './services/insights-mock-data'
 import type { InsightsInput } from './services/insights-mock-data'
 import { authenticate, getAuthStatus, signOut } from './services/google-auth'
-import { getGmailEmails } from './services/gmail-service'
+import { getGmailEmails, getGmailThread, sendGmailReply } from './services/gmail-service'
 import { getCalendarEvents } from './services/calendar-service'
 import * as db from './services/database'
 import type { ResearchInput, EmailMessage, CalendarEvent } from './services/mock-data'
@@ -178,12 +179,60 @@ function registerIpcHandlers(): void {
   // --- Insights Agent handlers ---
 
   ipcMain.handle('get-external-replies', () => {
+    // Use real Gmail replies when authenticated, mock data otherwise
+    if (getAuthStatus()) {
+      const replies = db.getReplyEmails()
+      // Map EmailMessage → ExternalEmailReply shape
+      return replies.map((e) => ({
+        id: e.id,
+        from: e.from,
+        to: e.to,
+        subject: e.subject,
+        body: e.body,
+        originalEmailSubject: e.subject.replace(/^Re:\s*/i, ''),
+        date: e.date,
+        threadId: e.threadId || undefined
+      }))
+    }
     return getExternalReplies()
   })
 
   ipcMain.handle('get-meeting-transcripts', () => {
     return getMeetingTranscripts()
   })
+
+  ipcMain.handle('get-email-thread', async (_event, threadId: string) => {
+    // Try DB first
+    const dbThread = db.getEmailThread(threadId)
+    if (dbThread.length > 0) {
+      return dbThread
+    }
+    // Fetch from Gmail API
+    if (getAuthStatus()) {
+      try {
+        const thread = await getGmailThread(threadId)
+        return thread
+      } catch (error) {
+        console.error('Failed to fetch thread:', error)
+        return []
+      }
+    }
+    return []
+  })
+
+  ipcMain.handle(
+    'send-email-reply',
+    async (
+      _event,
+      to: string,
+      subject: string,
+      body: string,
+      threadId?: string,
+      messageId?: string
+    ) => {
+      return sendGmailReply(to, subject, body, threadId, messageId)
+    }
+  )
 
   ipcMain.handle('run-insights', async (_event, input: InsightsInput) => {
     try {

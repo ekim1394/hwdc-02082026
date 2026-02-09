@@ -238,6 +238,20 @@ function App(): React.JSX.Element {
                       loading={loading}
                       error={error}
                       inputType={inputType}
+                      emailData={
+                        inputType === 'email' && selectedData
+                          ? (selectedData as {
+                              id: string
+                              from: string
+                              to: string
+                              subject: string
+                              body: string
+                              threadId?: string
+                              messageId?: string
+                            })
+                          : null
+                      }
+                      isAuthenticated={googleAuth}
                     />
                   </div>
                 </>
@@ -248,6 +262,7 @@ function App(): React.JSX.Element {
                   loading={false}
                   error={null}
                   inputType={null}
+                  isAuthenticated={googleAuth}
                 />
               )}
             </div>

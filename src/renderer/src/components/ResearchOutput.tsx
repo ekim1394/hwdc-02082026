@@ -1,11 +1,23 @@
 import { useState } from 'react'
 
+interface EmailData {
+  id: string
+  from: string
+  to: string
+  subject: string
+  body: string
+  threadId?: string
+  messageId?: string
+}
+
 interface ResearchOutputProps {
   output: string | null
   toolCalls: { tool: string; query: string }[]
   loading: boolean
   error: string | null
   inputType: 'email' | 'calendar' | null
+  emailData?: EmailData | null
+  isAuthenticated?: boolean
 }
 
 function renderMarkdown(text: string): string {
@@ -34,9 +46,13 @@ export default function ResearchOutput({
   toolCalls,
   loading,
   error,
-  inputType
+  inputType,
+  emailData,
+  isAuthenticated
 }: ResearchOutputProps): React.JSX.Element {
   const [copied, setCopied] = useState(false)
+  const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const handleCopy = (): void => {
     if (!output) return
@@ -44,6 +60,33 @@ export default function ResearchOutput({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
+  }
+
+  const handleSend = async (): Promise<void> => {
+    if (!output || !emailData || !isAuthenticated) return
+
+    setSendState('sending')
+    setSendError(null)
+
+    try {
+      const result = await window.api.sendEmailReply(
+        emailData.from,
+        emailData.subject,
+        output,
+        emailData.threadId,
+        emailData.messageId
+      )
+
+      if (result.success) {
+        setSendState('sent')
+      } else {
+        setSendState('error')
+        setSendError(result.error || 'Failed to send')
+      }
+    } catch (err) {
+      setSendState('error')
+      setSendError(err instanceof Error ? err.message : 'Failed to send')
+    }
   }
 
   if (loading) {
@@ -108,6 +151,20 @@ export default function ResearchOutput({
   }
 
   const isEmail = inputType === 'email'
+  const canSend = isEmail && isAuthenticated && emailData && sendState !== 'sent'
+
+  const sendButtonLabel = (): string => {
+    switch (sendState) {
+      case 'sending':
+        return '⏳ Sending...'
+      case 'sent':
+        return '✓ Sent!'
+      case 'error':
+        return '⚠️ Retry'
+      default:
+        return '✉️ Send'
+    }
+  }
 
   return (
     <div className="research-output">
@@ -119,8 +176,17 @@ export default function ResearchOutput({
               <button className="action-btn copy-btn" onClick={handleCopy}>
                 {copied ? '✓ Copied' : '📋 Copy Draft'}
               </button>
-              <button className="action-btn send-btn" disabled title="Send via Gmail (coming soon)">
-                ✉️ Send
+              <button
+                className={`action-btn send-btn ${sendState === 'sent' ? 'sent' : ''} ${sendState === 'error' ? 'send-error' : ''}`}
+                disabled={!canSend || sendState === 'sending'}
+                onClick={handleSend}
+                title={
+                  !isAuthenticated
+                    ? 'Connect Google to send emails'
+                    : sendError || 'Send reply via Gmail'
+                }
+              >
+                {sendButtonLabel()}
               </button>
             </>
           )}

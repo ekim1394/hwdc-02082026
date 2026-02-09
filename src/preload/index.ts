@@ -73,7 +73,19 @@ const api = {
     sourceType: string,
     sourceId: string
   ): Promise<{ actionIndex: number; status: string; executedAt: string }[]> =>
-    ipcRenderer.invoke('get-action-log', sourceType, sourceId)
+    ipcRenderer.invoke('get-action-log', sourceType, sourceId),
+
+  // Email thread & send
+  getEmailThread: (threadId: string): Promise<unknown[]> =>
+    ipcRenderer.invoke('get-email-thread', threadId),
+  sendEmailReply: (
+    to: string,
+    subject: string,
+    body: string,
+    threadId?: string,
+    messageId?: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> =>
+    ipcRenderer.invoke('send-email-reply', to, subject, body, threadId, messageId)
 }
 
 if (process.contextIsolated) {

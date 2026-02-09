@@ -30,6 +30,8 @@ interface Api {
       snippet: string
       body: string
       date: string
+      threadId?: string
+      messageId?: string
     }[]
   >
   getEvents: () => Promise<
@@ -65,6 +67,7 @@ interface Api {
       body: string
       originalEmailSubject: string
       date: string
+      threadId?: string
     }[]
   >
   getMeetingTranscripts: () => Promise<
@@ -95,6 +98,28 @@ interface Api {
     sourceType: string,
     sourceId: string
   ) => Promise<{ actionIndex: number; status: string; executedAt: string }[]>
+
+  // Email thread & send
+  getEmailThread: (threadId: string) => Promise<
+    {
+      id: string
+      from: string
+      to: string
+      subject: string
+      snippet: string
+      body: string
+      date: string
+      threadId?: string
+      messageId?: string
+    }[]
+  >
+  sendEmailReply: (
+    to: string,
+    subject: string,
+    body: string,
+    threadId?: string,
+    messageId?: string
+  ) => Promise<{ success: boolean; messageId?: string; error?: string }>
 }
 
 declare global {

@@ -9,6 +9,7 @@ import { shell } from 'electron'
 // Scopes needed for Gmail and Calendar read access
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/calendar.readonly'
 ]
 

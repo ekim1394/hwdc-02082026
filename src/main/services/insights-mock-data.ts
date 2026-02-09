@@ -8,6 +8,7 @@ export interface ExternalEmailReply {
   body: string
   originalEmailSubject: string
   date: string
+  threadId?: string
 }
 
 export interface MeetingTranscript {

@@ -27,6 +27,8 @@ export function initDatabase(): void {
       snippet TEXT,
       body TEXT,
       date TEXT,
+      thread_id TEXT,
+      message_id TEXT,
       processed INTEGER DEFAULT 0,
       fetched_at TEXT DEFAULT (datetime('now'))
     );
@@ -75,6 +77,18 @@ export function initDatabase(): void {
     );
   `)
 
+  // Migration: add thread_id / message_id if missing
+  const emailCols = db
+    .prepare("PRAGMA table_info('emails')")
+    .all()
+    .map((c) => (c as { name: string }).name)
+  if (!emailCols.includes('thread_id')) {
+    db.exec('ALTER TABLE emails ADD COLUMN thread_id TEXT')
+  }
+  if (!emailCols.includes('message_id')) {
+    db.exec('ALTER TABLE emails ADD COLUMN message_id TEXT')
+  }
+
   console.log('💾 Database initialized at', DB_PATH)
 }
 
@@ -93,12 +107,13 @@ function getDb(): Database.Database {
 export function upsertEmails(emails: EmailMessage[]): number {
   const d = getDb()
   const insert = d.prepare(`
-    INSERT INTO emails (id, from_addr, to_addr, subject, snippet, body, date)
-    VALUES (@id, @from, @to, @subject, @snippet, @body, @date)
+    INSERT INTO emails (id, from_addr, to_addr, subject, snippet, body, date, thread_id, message_id)
+    VALUES (@id, @from, @to, @subject, @snippet, @body, @date, @threadId, @messageId)
     ON CONFLICT(id) DO UPDATE SET
       from_addr=excluded.from_addr, to_addr=excluded.to_addr,
       subject=excluded.subject, snippet=excluded.snippet,
-      body=excluded.body, date=excluded.date
+      body=excluded.body, date=excluded.date,
+      thread_id=excluded.thread_id, message_id=excluded.message_id
   `)
 
   // Check which IDs already exist
@@ -120,7 +135,9 @@ export function upsertEmails(emails: EmailMessage[]): number {
         subject: email.subject,
         snippet: email.snippet,
         body: email.body,
-        date: email.date
+        date: email.date,
+        threadId: email.threadId || null,
+        messageId: email.messageId || null
       })
     }
   })
@@ -150,7 +167,32 @@ export function getExistingEventIds(): Set<string> {
 export function getAllEmails(): EmailMessage[] {
   return getDb()
     .prepare(
-      'SELECT id, from_addr as "from", to_addr as "to", subject, snippet, body, date FROM emails ORDER BY date DESC'
+      'SELECT id, from_addr as "from", to_addr as "to", subject, snippet, body, date, thread_id as threadId, message_id as messageId FROM emails ORDER BY date DESC'
+    )
+    .all() as EmailMessage[]
+}
+
+/**
+ * Get all emails in a thread, ordered by date (oldest first).
+ */
+export function getEmailThread(threadId: string): EmailMessage[] {
+  return getDb()
+    .prepare(
+      'SELECT id, from_addr as "from", to_addr as "to", subject, snippet, body, date, thread_id as threadId, message_id as messageId FROM emails WHERE thread_id = ? ORDER BY date ASC'
+    )
+    .all(threadId) as EmailMessage[]
+}
+
+/**
+ * Get emails that are replies (subject starts with Re:), for the insights page.
+ */
+export function getReplyEmails(): EmailMessage[] {
+  return getDb()
+    .prepare(
+      `SELECT id, from_addr as "from", to_addr as "to", subject, snippet, body, date, thread_id as threadId, message_id as messageId
+       FROM emails
+       WHERE subject LIKE 'Re:%' OR subject LIKE 'RE:%'
+       ORDER BY date DESC`
     )
     .all() as EmailMessage[]
 }

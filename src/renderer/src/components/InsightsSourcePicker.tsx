@@ -8,6 +8,7 @@ interface EmailReply {
   body: string
   originalEmailSubject: string
   date: string
+  threadId?: string
 }
 
 interface Transcript {

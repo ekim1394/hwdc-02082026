@@ -9,6 +9,8 @@ export interface EmailMessage {
   snippet: string
   body: string
   date: string
+  threadId?: string
+  messageId?: string
 }
 
 export interface CalendarEvent {
