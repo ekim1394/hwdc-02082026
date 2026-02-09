@@ -161,6 +161,15 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
       : buildDraftEmailPrompt(input.data as EmailMessage)
 
   const toolCallLog: { tool: string; query: string }[] = []
+  let stepCount = 0
+
+  console.log('\n' + '='.repeat(60))
+  console.log(`🧠 Research Agent Started`)
+  console.log(`   Type: ${input.type}`)
+  console.log(
+    `   Input: ${input.type === 'calendar' ? (input.data as CalendarEvent).summary : (input.data as EmailMessage).subject}`
+  )
+  console.log('='.repeat(60))
 
   const result = await generateText({
     model: anthropic('claude-sonnet-4-20250514'),
@@ -169,18 +178,35 @@ export async function runResearchAgent(input: ResearchInput): Promise<AgentResul
     system:
       'You are a thorough research agent. Always use the linkupSearch tool to gather real information before writing your response. Make multiple searches to build comprehensive context. Never fabricate information — only include facts you found through search.',
     prompt,
-    onStepFinish: ({ toolCalls }) => {
-      for (const tc of toolCalls) {
-        if ('input' in tc && tc.toolName === 'linkupSearch') {
-          const toolInput = tc.input as { query: string }
-          toolCallLog.push({
-            tool: 'linkupSearch',
-            query: toolInput.query
-          })
+    onStepFinish: ({ toolCalls, text, finishReason }) => {
+      stepCount++
+      console.log(`\n--- Step ${stepCount} (reason: ${finishReason}) ---`)
+
+      if (toolCalls.length > 0) {
+        for (const tc of toolCalls) {
+          if ('input' in tc && tc.toolName === 'linkupSearch') {
+            const toolInput = tc.input as { query: string }
+            console.log(`   🔍 Search: "${toolInput.query}"`)
+            toolCallLog.push({
+              tool: 'linkupSearch',
+              query: toolInput.query
+            })
+          }
         }
+      }
+
+      if (text) {
+        console.log(`   📝 Generated ${text.length} chars of text`)
       }
     }
   })
+
+  console.log('\n' + '='.repeat(60))
+  console.log(`✅ Research Complete`)
+  console.log(`   Steps: ${stepCount}`)
+  console.log(`   Searches: ${toolCallLog.length}`)
+  console.log(`   Output: ${result.text.length} chars`)
+  console.log('='.repeat(60) + '\n')
 
   return {
     output: result.text,
