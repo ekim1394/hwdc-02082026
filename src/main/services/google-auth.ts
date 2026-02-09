@@ -24,7 +24,7 @@ let isAuthenticated = false
  * Load client credentials from the client_secret JSON file in the project root.
  */
 function loadCredentials(): { clientId: string; clientSecret: string; redirectUri: string } {
-  const projectRoot = path.resolve(__dirname, '../../..')
+  const projectRoot = process.cwd()
   const files = fs.readdirSync(projectRoot)
   const secretFile = files.find((f) => f.startsWith('client_secret') && f.endsWith('.json'))
 
