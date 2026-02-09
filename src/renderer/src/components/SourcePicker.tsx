@@ -41,27 +41,50 @@ function formatDate(dateStr: string): string {
   })
 }
 
-/** Group emails by threadId. Single-thread emails stay standalone. */
+/** Strip Re:/Fwd:/FW: prefixes and normalize whitespace for grouping. */
+function normalizeSubject(subject: string): string {
+  return subject
+    .replace(/^(re|fwd|fw)\s*:\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+/** Group emails by threadId, then merge groups with the same normalized subject. */
 function groupEmailsByThread(emails: Email[]): ThreadGroup[] {
-  const map = new Map<string, Email[]>()
+  // Step 1: group by threadId (or email id if no threadId)
+  const threadMap = new Map<string, Email[]>()
   for (const email of emails) {
     const key = email.threadId || email.id
-    const group = map.get(key)
+    const group = threadMap.get(key)
     if (group) {
       group.push(email)
     } else {
-      map.set(key, [email])
+      threadMap.set(key, [email])
     }
   }
 
-  const groups: ThreadGroup[] = []
-  for (const [threadId, threadEmails] of map) {
-    // Sort newest first within each thread
-    threadEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    groups.push({ threadId, emails: threadEmails, representative: threadEmails[0] })
+  // Step 2: merge thread groups that share the same normalized subject
+  const subjectMap = new Map<string, Email[]>()
+  for (const threadEmails of threadMap.values()) {
+    // Use the first email's subject as the group key
+    const normSubject = normalizeSubject(threadEmails[0].subject)
+    const existing = subjectMap.get(normSubject)
+    if (existing) {
+      existing.push(...threadEmails)
+    } else {
+      subjectMap.set(normSubject, [...threadEmails])
+    }
   }
 
-  // Sort groups by newest representative date
+  // Step 3: build final groups sorted newest-first
+  const groups: ThreadGroup[] = []
+  for (const [, groupEmails] of subjectMap) {
+    groupEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const threadId = groupEmails[0].threadId || groupEmails[0].id
+    groups.push({ threadId, emails: groupEmails, representative: groupEmails[0] })
+  }
+
   groups.sort(
     (a, b) => new Date(b.representative.date).getTime() - new Date(a.representative.date).getTime()
   )
